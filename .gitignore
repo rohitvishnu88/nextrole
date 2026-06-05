@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+
+# Environment variables — never commit these
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+
+# Generated output — personal data, not for version control
+output/
+data/profiles/
+data/applications.db
+
+# Logs
+*.log
+/tmp/
+
+# Node
+node_modules/
+web/node_modules/
+
+# Next.js build output
+web/.next/
+web/out/
+web/.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Playwright
+test-results/
+playwright-report/
+
+# Claude Code internals
+.claude/
+.superpowers/
+
+# Personal resume files generated in root (legacy)
+*.html
+*.pdf
+rohit_vishnu_mopuri_*
+
+# TypeScript build cache
+web/tsconfig.tsbuildinfo
+web/next-env.d.ts
+
+# Archive / old data
+archive/
+data/jd_*.txt

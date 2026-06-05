@@ -1,0 +1,148 @@
+{
+  "name": "Rohit Vishnu Mopuri",
+  "designation": "Data Integration and Cloud Architect",
+  "work_right": "Applied for ILR (Indefinite Leave to Remain)",
+  "email": "rohitvishnu@gmail.com",
+  "phone": "+44 7 587788215",
+  "website": "",
+  "summary": "Data Integration Architect with 15 years across enterprise integration, cloud data engineering, and API management. Comfortable going deep on architecture one day and hands-on in a production pipeline the next. Client-facing throughout: designing reference architectures, running technical advisory workshops, managing scope and timelines, and working through escalations. Delivered greenfield data lakehouse platforms, event-driven integration, and APIM governance for clients spanning banking, automotive, aviation, and telecoms. Worked across the full data engineering stack: Apache Iceberg, PySpark, Airflow, Kafka, MuleSoft, Apigee, and AWS.",
+  "experience": [
+    {
+      "title": "Data Integration Lead | Cloud Data Architect",
+      "highlight": "West Bromwich Building Society (WBBS) – Banking Data Platform",
+      "company": "Deloitte UK",
+      "location": "",
+      "start_date": "Apr 2024",
+      "end_date": "Present",
+      "description": [
+        "Architected and delivered a greenfield cloud-native data lakehouse as a reusable product framework, with pluggable data interfaces, config-driven pipelines, and a standardised medallion architecture built to onboard other UK building societies quickly.",
+        "Enabled real-time FPS/BACS payment processing, automated FCA regulatory reporting, and cut reconciliation effort by 80%. Reduced overnight batch windows to hourly runs and a 4-hour manual GL process to 15 minutes. The platform now runs WBBS's savings, deposits, ISA, and mortgage data flows.",
+        "Designed four-layer medallion architecture (Raw → Conformed → Derived → Provisioned) on Apache Iceberg (AWS S3 Tables) with ACID compliance, time travel, snapshot-based CDC, and SCD Type 1 MERGE.",
+        "Diagnosed and resolved 110 TB / 1.38M file metadata bloat caused by unbounded Iceberg metadata-log chain accumulation, using table optimisation techniques including snapshot management and orphan file deletion.",
+        "Designed event-driven integration using Apache Kafka + Avro + Karapace Schema Registry with exactly-once semantics and full audit trail via event sourcing.",
+        "Orchestrated 30+ Airflow DAGs on MWAA with S3KeySensor file-arrival triggers, dynamic micro-batch windowing via GlueJobOperator, Iceberg maintenance DAGs, and ExternalTaskSensor cross-pipeline coordination. Fully portable across 6 environments via config-driven Airflow Variables.",
+        "Built 50+ PySpark Glue jobs with end-to-end CI/CD across 6 environments (dev → prd); 10,000+ lines of production Python.",
+        "Implemented ISO 20022 (PAIN.001/002, SESE.111) XSD validation, PGP encryption, GuardDuty scanning, and Lake Formation RBAC for FCA regulatory compliance.",
+        "Designed custom Dynatrace observability dashboards for pipeline health, ingestion latency, and exception trend monitoring."
+      ]
+    },
+    {
+      "title": "Solution & Integration Architect",
+      "highlight": "Deloitte UK Clients – Jet2 Holidays | JLR | Bentley Motors",
+      "company": "Deloitte UK",
+      "location": "London, UK",
+      "start_date": "Jun 2021",
+      "end_date": "Mar 2024",
+      "description": [
+        "Jet2 Holidays: Led data architecture and integration strategy for the Revenue Management & Pricing transformation. Designed a Gen AI pricing data model in Snowflake with Kafka-based real-time streaming for vendor pilots and price forecasting.",
+        "Jet2 Holidays: Architected an event-driven Kafka platform, defining topic strategy with partition management, replication factors, and data retention policies. Connected sources and sinks via Kafka Connect across external vendors.",
+        "Jet2 Holidays: Designed scalable, modular EDA pipelines for low-latency data sharing and built Kafka message-replay pipelines to generate training and inference data for the Gen AI pricing engine.",
+        "Authored leadership PoV and business case securing executive buy-in for APIM/iPaaS modernisation and integration governance across the organisation.",
+        "Bentley Motors: Delivered Customer 360 and Vehicle 360 for the contact centre, integrating Salesforce Service Cloud via MuleSoft and AWS with event-driven lead validation pipelines to enrich webform records before they reached Salesforce.",
+        "Bentley Motors: Built an API-led digital platform using MuleSoft microservices with Anypoint MQ for async event handling, clearing technical debt and cutting delivery time.",
+        "Bentley Motors: Provisioned AWS queue infrastructure (SQS/SNS) with dead letter queue failover for integration resiliency; implemented CI/CD via Git and AWS CodePipeline.",
+        "JLR (EV Charging): Architected cloud-native microservices and Apigee API governance for Jaguar Land Rover's EV charging platform to support ecommerce journeys and third-party partner integrations."
+      ]
+    },
+    {
+      "title": "Technical Architect – Data Integration",
+      "highlight": "Brunel University London – Greenfield Data Integration Platform",
+      "company": "WHISHWORKS Ltd",
+      "location": "London, UK (Remote)",
+      "start_date": "May 2020",
+      "end_date": "May 2021",
+      "description": [
+        "Designed and delivered a greenfield data integration platform for Brunel University London, building end-to-end pipelines from source systems into Snowflake.",
+        "Built and maintained Snowflake data products applying dimensional modelling and a canonical data model to support university-wide reporting and operational analytics.",
+        "Optimised pipeline performance and scalability by automating ingestion workflows to cut time from raw data arrival to usable output.",
+        "Developed complex stored procedures in SQL to implement order management logic within Oracle EBS and exposed them as APIs for downstream system consumption."
+      ]
+    },
+    {
+      "title": "Integration Lead",
+      "highlight": "F&B Major – EDI Platform Modernization",
+      "company": "Argano India Pvt Ltd (Previously Keste Pvt Ltd)",
+      "location": "Hyderabad, India",
+      "start_date": "Aug 2016",
+      "end_date": "May 2020",
+      "description": [
+        "Led EDI platform modernisation for a US food and beverage company, introducing MuleSoft and Oracle SOA for service integration. Used GXS to decouple partner-specific EDI translation from core integration.",
+        "Integrated Front-of-House systems with Oracle ERP via Oracle Integration Cloud for real-time invoice and customer data sync, reducing TCO and giving full order visibility across the supply chain.",
+        "Delivered complex XSLT/XQuery data transformations and JMS/SAF messaging integrations across distributed supply chain systems."
+      ]
+    },
+    {
+      "title": "Technical Architect",
+      "highlight": "SingTel – Customer 360 CRM Transformation",
+      "company": "Accenture",
+      "location": "Bengaluru, India",
+      "start_date": "Aug 2014",
+      "end_date": "Aug 2016",
+      "description": [
+        "Designed and led the Customer 360 CRM transformation for Singapore Telecom, integrating Salesforce Sales Cloud via MuleSoft and Kong API Gateway with JWT/OAuth2 policies, rate limiting, and a Zero-Trust security model.",
+        "Processed millions of records from SingTel's EDW to Salesforce using Bulk APIs. Implemented batch and API-first architectures to keep data in sync across downstream systems.",
+        "Achieved near real-time invoice creation in Oracle ERP and pushed results back into Front-of-House systems, cutting end-of-day reconciliation time."
+      ]
+    },
+    {
+      "title": "Senior Software Engineer",
+      "highlight": "E-commerce & FinTech – Digital Transformation",
+      "company": "Infosys Ltd",
+      "location": "Hyderabad, India",
+      "start_date": "Jun 2010",
+      "end_date": "Jul 2014",
+      "description": [
+        "Delivered digital transformation and FinTech solutions for e-commerce clients covering 200M+ users, across consulting, software development, and QA."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor in Technology – Computer Science",
+      "school": "SASTRA University",
+      "location": "Thanjavur, India",
+      "start_date": "2006",
+      "end_date": "2010",
+      "gpa": "88.92%"
+    }
+  ],
+  "skills": {
+    "Cloud Data & Lakehouse": ["Apache Iceberg", "AWS S3 Tables", "AWS Glue", "PySpark", "Snowflake", "dbt", "Medallion Architecture", "CDC / SCD", "Data Modelling"],
+    "Data Orchestration & Streaming": ["Airflow (MWAA)", "Apache Kafka", "Kafka Connect", "Avro / Schema Registry", "Event-driven Pipelines", "Event Sourcing"],
+    "API Management & iPaaS": ["MuleSoft iPaaS", "Apigee", "Kong APIM", "Oracle Integration", "Boomi iPaaS", "API Governance"],
+    "Solution Architecture": ["Integration Strategy", "EDA", "Microservices", "Digital Transformation", "APIM Federation"],
+    "Cloud & DevOps": ["AWS", "GCP", "Terraform", "GitHub Actions", "CI/CD", "Lake Formation RBAC", "GuardDuty"],
+    "Programming": ["Python", "PySpark", "SQL", "FastAPI", "REST APIs"],
+    "Security & Compliance": ["OAuth2 / JWT", "ISO 20022", "PGP Encryption", "RBAC", "IAM", "Zero-Trust"]
+  },
+  "certifications": [
+    {
+      "name": "AWS Solution Architect Professional",
+      "issuer": "Amazon Web Services"
+    },
+    {
+      "name": "MuleSoft MCIA",
+      "issuer": "MuleSoft"
+    },
+    {
+      "name": "Snowflake Pro Core",
+      "issuer": "Snowflake"
+    },
+    {
+      "name": "Salesforce Data Cloud",
+      "issuer": "Salesforce"
+    },
+    {
+      "name": "Kong API Gateway Associate",
+      "issuer": "Kong"
+    },
+    {
+      "name": "Azure Fundamentals",
+      "issuer": "Microsoft"
+    },
+    {
+      "name": "Databricks Fundamentals Accreditation",
+      "issuer": "Databricks"
+    }
+  ]
+}
