@@ -1,6 +1,6 @@
 # Next Role
 
-> AI-powered job search — tailor your resume, track applications, and understand what the agent searches for.
+> AI-powered job search: tailor your resume, track applications, and understand what the agent searches for.
 
 Built with Claude AI, FastAPI, and Next.js. Runs entirely on your machine. Your data never leaves your computer.
 
@@ -8,11 +8,11 @@ Built with Claude AI, FastAPI, and Next.js. Runs entirely on your machine. Your 
 
 ## What it does
 
-- **Resume tailoring** — paste a job URL or description, Claude rewrites your resume bullets and generates a cover letter in under a minute
-- **Application tracker** — track every role from Saved to Offer in a sortable table or drag-and-drop kanban board
-- **Search brief** — see exactly what parameters the job search agent uses (target roles, skills, location, seniority) and toggle signals on or off
-- **Multi-profile** — upload a PDF or DOCX resume for each person; Claude parses it automatically
-- **Local and private** — no cloud database, no accounts, no tracking
+- **Resume tailoring**: paste a job URL or description, Claude rewrites your resume bullets and generates a cover letter in under a minute
+- **Application tracker**: track every role from Saved to Offer in a sortable table or drag-and-drop kanban board
+- **Search brief**: see exactly what parameters the job search agent uses (target roles, skills, location, seniority) and toggle signals on or off
+- **Multi-profile**: upload a PDF or DOCX resume for each person; Claude parses it automatically
+- **Local and private**: no cloud database, no accounts, no tracking
 
 ---
 
@@ -20,8 +20,8 @@ Built with Claude AI, FastAPI, and Next.js. Runs entirely on your machine. Your 
 
 - Python 3.9+
 - Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com/) — required for all AI features
-- A [Tavily API key](https://tavily.com/) — optional, only needed for the CLI job search agent
+- An [Anthropic API key](https://console.anthropic.com/): required for all AI features
+- A [Tavily API key](https://tavily.com/): optional, only needed for the CLI job search agent
 
 ---
 
@@ -56,14 +56,14 @@ cd resume-builder
 **Mac / Linux**
 ```bash
 export ANTHROPIC_API_KEY=your-key-here
-# Optional — only for CLI job search
+# Optional: only for CLI job search
 export TAVILY_API_KEY=your-key-here
 ```
 
 **Windows (PowerShell)**
 ```powershell
 $env:ANTHROPIC_API_KEY = "your-key-here"
-# Optional — only for CLI job search
+# Optional: only for CLI job search
 $env:TAVILY_API_KEY = "your-key-here"
 ```
 
@@ -101,7 +101,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 1. Click your profile area (top right) and select **Add Profile**
 2. Enter a name and upload your resume as a PDF or DOCX
-3. Claude parses it — review the extracted data and confirm
+3. Claude parses it: review the extracted data and confirm
 4. Your profile is ready
 
 ---
@@ -122,7 +122,7 @@ Go to **Applications** to add and manage roles. Toggle between table and kanban 
 
 ### Search brief
 
-Go to **Search Brief** and click **Generate from Resume**. Claude reads your resume and extracts the parameters the job search agent uses — target roles, core skills, location, seniority, industries, and exclusions. Toggle any signal on or off and see the search queries update live on the right.
+Go to **Search Brief** and click **Generate from Resume**. Claude reads your resume and extracts the parameters the job search agent uses: target roles, core skills, location, seniority, industries, and exclusions. Toggle any signal on or off and see the search queries update live on the right.
 
 ### CLI job search (optional)
 
@@ -156,13 +156,13 @@ No special web server or database server required. SQLite handles the applicatio
 
 ## Running on another machine
 
-Same steps as manual setup above — clone, set API keys, run `setup` and `start`. No additional configuration needed. Each person needs their own Anthropic API key.
+Same steps as manual setup above: clone, set API keys, run `setup` and `start`. No additional configuration needed. Each person needs their own Anthropic API key.
 
 ---
 
 ## Self-hosting
 
-The app is designed for local use but can be hosted on a server. The Python backend requires a Linux environment with Chromium available for PDF generation (Railway, Fly.io, or a VPS with Docker work well). The Next.js frontend can be deployed to Vercel separately — set `NEXT_PUBLIC_API_URL` to point at your hosted backend.
+The app is designed for local use but can be hosted on a server. The Python backend requires a Linux environment with Chromium available for PDF generation (Railway, Fly.io, or a VPS with Docker work well). The Next.js frontend can be deployed to Vercel separately: set `NEXT_PUBLIC_API_URL` to point at your hosted backend.
 
 ---
 
@@ -181,7 +181,7 @@ The app is designed for local use but can be hosted on a server. The Python back
 ## Project structure
 
 ```
-agents/       CLI agents — tailor, job search, LinkedIn, orchestrator
+agents/       CLI agents: tailor, job search, LinkedIn, orchestrator
 a2a/          FastAPI server and REST routes
 core/         Shared config, PDF renderer, Jinja2 template
 data/         Profile resume data and applications database
