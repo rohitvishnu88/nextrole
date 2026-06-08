@@ -75,6 +75,7 @@ def get_tailor_status(job_id: str):
         "message": job.get("message", ""),
         "pdf_file": job.get("pdf_file"),
         "cover_letter_file": job.get("cover_letter_file"),
+        "json_file": job.get("json_file"),
         "url": job.get("url", ""),
     }
 
