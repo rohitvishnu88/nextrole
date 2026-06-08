@@ -80,6 +80,18 @@ def get_tailor_status(job_id: str):
     }
 
 
+@router.get("/{job_id}/data")
+def get_tailor_data(job_id: str):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    json_path = Path(job["json_file"])
+    if not json_path.exists():
+        raise HTTPException(status_code=404, detail="Resume JSON not found on disk")
+    with open(json_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 @router.get("/{job_id}/pdf")
 def download_pdf(job_id: str):
     job = _jobs.get(job_id)

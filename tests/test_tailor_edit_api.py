@@ -54,3 +54,18 @@ def test_status_includes_json_file(client):
     data = resp.json()
     assert "json_file" in data
     assert data["json_file"].endswith("resume.json")
+
+
+def test_get_data_returns_resume_json(client):
+    c, mod = client
+    resp = c.get("/api/tailor/test-job-id/data")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "Test User"
+    assert data["summary"] == "A summary."
+
+
+def test_get_data_404_for_unknown_job(client):
+    c, _ = client
+    resp = c.get("/api/tailor/no-such-id/data")
+    assert resp.status_code == 404
