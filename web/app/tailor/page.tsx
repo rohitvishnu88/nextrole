@@ -1,19 +1,28 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import * as api from "@/lib/api";
 import type { TailorJob } from "@/lib/types";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { AddApplicationModal } from "@/components/AddApplicationModal";
-import { Wand2, Download, Plus } from "lucide-react";
+import { Wand2, Download, Plus, Pencil } from "lucide-react";
 
-export default function TailorPage() {
+function TailorPageInner() {
   const profile = useActiveProfile();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<"url" | "jd">("url");
   const [input, setInput] = useState("");
   const [job, setJob] = useState<TailorJob | null>(null);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState("");
   const [showAddToTracker, setShowAddToTracker] = useState(false);
+
+  // Restore completed job when redirected back from the edit page
+  useEffect(() => {
+    const jobParam = searchParams.get("job");
+    if (!jobParam || job) return;
+    api.getTailorStatus(jobParam).then(setJob).catch(() => {});
+  }, [searchParams, job]);
 
   async function handleSubmit() {
     if (!input.trim() || !profile) return;
@@ -60,7 +69,6 @@ export default function TailorPage() {
       )}
 
       <div className="bg-white rounded-2xl border border-warm-border p-6 space-y-4">
-        {/* Mode tabs */}
         <div className="flex gap-2">
           {(["url", "jd"] as const).map(m => (
             <button
@@ -134,6 +142,13 @@ export default function TailorPage() {
                 <Download size={14} />
                 Cover Letter
               </a>
+              <a
+                href={`/tailor/${job.job_id}/edit`}
+                className="flex items-center gap-2 border border-warm-border text-navy hover:bg-cream rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+              >
+                <Pencil size={14} />
+                Edit Resume
+              </a>
               <button
                 onClick={() => setShowAddToTracker(true)}
                 className="flex items-center gap-2 border border-accent text-accent hover:bg-accent-light rounded-xl px-4 py-2 text-sm font-medium transition-colors"
@@ -155,5 +170,14 @@ export default function TailorPage() {
         />
       )}
     </div>
+  );
+}
+
+// useSearchParams() requires a Suspense boundary in Next.js App Router
+export default function TailorPage() {
+  return (
+    <Suspense fallback={null}>
+      <TailorPageInner />
+    </Suspense>
   );
 }

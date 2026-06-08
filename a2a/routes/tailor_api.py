@@ -1,4 +1,6 @@
 import asyncio
+import json
+import sys
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -6,6 +8,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
+from resume_builder import render_resume
 
 router = APIRouter(prefix="/api/tailor", tags=["tailor"])
 
@@ -16,6 +21,11 @@ class TailorRequest(BaseModel):
     profile_slug: str
     url: Optional[str] = None
     jd_text: Optional[str] = None
+
+
+class UpdateRequest(BaseModel):
+    resume: dict
+    cover_letter: Optional[str] = None
 
 
 @router.post("")
@@ -70,8 +80,53 @@ def get_tailor_status(job_id: str):
         "message": job.get("message", ""),
         "pdf_file": job.get("pdf_file"),
         "cover_letter_file": job.get("cover_letter_file"),
+        "json_file": job.get("json_file"),
         "url": job.get("url", ""),
     }
+
+
+@router.get("/{job_id}/data")
+def get_tailor_data(job_id: str):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    json_path = Path(job["json_file"])
+    if not json_path.exists():
+        raise HTTPException(status_code=404, detail="Resume JSON not found on disk")
+    with open(json_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+@router.get("/{job_id}/cover-letter-text")
+def get_cover_letter_text(job_id: str):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    path = Path(job["cover_letter_file"])
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Cover letter not found on disk")
+    return {"text": path.read_text(encoding="utf-8")}
+
+
+@router.patch("/{job_id}/data")
+def update_tailor_data(job_id: str, body: UpdateRequest):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+
+    json_path = Path(job["json_file"])
+    pdf_path = Path(job["pdf_file"])
+    html_path = pdf_path.with_suffix(".html")
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(body.resume, f, indent=2)
+
+    render_resume(body.resume, str(html_path), str(pdf_path))
+
+    if body.cover_letter is not None:
+        Path(job["cover_letter_file"]).write_text(body.cover_letter, encoding="utf-8")
+
+    return {"ok": True}
 
 
 @router.get("/{job_id}/pdf")
