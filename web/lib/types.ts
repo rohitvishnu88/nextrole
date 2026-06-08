@@ -34,7 +34,30 @@ export interface TailorJob {
   message: string;
   pdf_file?: string;
   cover_letter_file?: string;
+  json_file?: string;
   url?: string;
+}
+
+export interface TailoredExperience {
+  title: string;
+  highlight: string;
+  company: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string[];
+}
+
+export interface TailoredResume {
+  name: string;
+  designation: string;
+  work_right?: string;
+  email: string;
+  phone: string;
+  website?: string;
+  summary: string;
+  experience: TailoredExperience[];
+  [key: string]: unknown;
 }
 
 export type SignalConfidence = "high" | "medium" | "low";

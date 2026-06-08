@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, SearchBrief, Signal } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal } from "./types";
 
 const BASE = "/api";
 
@@ -78,6 +78,22 @@ export const startTailor = (profileSlug: string, url?: string, jdText?: string) 
 
 export const getTailorStatus = (jobId: string) =>
   req<TailorJob>(`/tailor/${jobId}`);
+
+export const getTailorData = (jobId: string) =>
+  req<TailoredResume>(`/tailor/${jobId}/data`);
+
+export const getTailorCoverLetterText = (jobId: string) =>
+  req<{ text: string }>(`/tailor/${jobId}/cover-letter-text`);
+
+export const patchTailorData = (
+  jobId: string,
+  resume: TailoredResume,
+  coverLetter: string,
+) =>
+  req<{ ok: boolean }>(`/tailor/${jobId}/data`, {
+    method: "PATCH",
+    body: JSON.stringify({ resume, cover_letter: coverLetter }),
+  });
 
 // Search Brief
 export const getSearchBrief = (slug: string) =>
