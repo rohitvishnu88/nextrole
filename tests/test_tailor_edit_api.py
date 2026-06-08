@@ -69,3 +69,11 @@ def test_get_data_404_for_unknown_job(client):
     c, _ = client
     resp = c.get("/api/tailor/no-such-id/data")
     assert resp.status_code == 404
+
+
+def test_get_cover_letter_text(client):
+    c, mod = client
+    resp = c.get("/api/tailor/test-job-id/cover-letter-text")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["text"] == "Cover letter text."

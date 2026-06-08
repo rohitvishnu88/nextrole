@@ -92,6 +92,17 @@ def get_tailor_data(job_id: str):
         return json.load(f)
 
 
+@router.get("/{job_id}/cover-letter-text")
+def get_cover_letter_text(job_id: str):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    path = Path(job["cover_letter_file"])
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Cover letter not found on disk")
+    return {"text": path.read_text(encoding="utf-8")}
+
+
 @router.get("/{job_id}/pdf")
 def download_pdf(job_id: str):
     job = _jobs.get(job_id)
