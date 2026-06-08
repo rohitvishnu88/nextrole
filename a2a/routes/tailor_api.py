@@ -23,6 +23,11 @@ class TailorRequest(BaseModel):
     jd_text: Optional[str] = None
 
 
+class UpdateRequest(BaseModel):
+    resume: dict
+    cover_letter: Optional[str] = None
+
+
 @router.post("")
 async def start_tailor(body: TailorRequest):
     if not body.url and not body.jd_text:
@@ -101,6 +106,27 @@ def get_cover_letter_text(job_id: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Cover letter not found on disk")
     return {"text": path.read_text(encoding="utf-8")}
+
+
+@router.patch("/{job_id}/data")
+def update_tailor_data(job_id: str, body: UpdateRequest):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+
+    json_path = Path(job["json_file"])
+    pdf_path = Path(job["pdf_file"])
+    html_path = pdf_path.with_suffix(".html")
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(body.resume, f, indent=2)
+
+    render_resume(body.resume, str(html_path), str(pdf_path))
+
+    if body.cover_letter is not None:
+        Path(job["cover_letter_file"]).write_text(body.cover_letter, encoding="utf-8")
+
+    return {"ok": True}
 
 
 @router.get("/{job_id}/pdf")

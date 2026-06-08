@@ -77,3 +77,34 @@ def test_get_cover_letter_text(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["text"] == "Cover letter text."
+
+
+def test_patch_data_updates_json_and_cover_letter(client, tmp_path, monkeypatch):
+    c, mod = client
+
+    # Mock render_resume so we don't need Playwright in tests
+    import resume_builder
+    monkeypatch.setattr(resume_builder, "render_resume", lambda data, html, pdf: None)
+
+    updated_resume = {"name": "Test User", "summary": "Updated summary.", "experience": []}
+    resp = c.patch("/api/tailor/test-job-id/data", json={
+        "resume": updated_resume,
+        "cover_letter": "Updated cover letter.",
+    })
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+    # Verify the JSON file on disk was overwritten
+    import json as _json
+    job = mod._jobs["test-job-id"]
+    written = _json.loads(Path(job["json_file"]).read_text())
+    assert written["summary"] == "Updated summary."
+
+    # Verify the cover letter was overwritten
+    assert Path(job["cover_letter_file"]).read_text() == "Updated cover letter."
+
+
+def test_patch_data_404_for_unknown_job(client):
+    c, _ = client
+    resp = c.patch("/api/tailor/no-such-id/data", json={"resume": {}, "cover_letter": None})
+    assert resp.status_code == 404
