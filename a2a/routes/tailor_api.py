@@ -1,4 +1,6 @@
 import asyncio
+import json
+import sys
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -6,6 +8,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
+from resume_builder import render_resume
 
 router = APIRouter(prefix="/api/tailor", tags=["tailor"])
 
