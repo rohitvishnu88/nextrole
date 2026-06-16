@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Upload, Check } from "lucide-react";
 import * as api from "@/lib/api";
 
 interface Props {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (slug: string) => void;
 }
 
 export function AddProfileModal({ onClose, onCreated }: Props) {
@@ -40,7 +41,7 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
       await api.createProfile(name, slug);
       await api.confirmResume(slug);
       setStep("done");
-      onCreated();
+      onCreated(slug);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save profile");
     } finally {
@@ -48,9 +49,9 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 relative">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl mx-4 p-6 relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
           <X size={18} />
         </button>
@@ -202,6 +203,7 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

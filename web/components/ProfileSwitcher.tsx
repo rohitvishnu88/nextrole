@@ -116,7 +116,13 @@ export function ProfileSwitcher() {
       {showAdd && (
         <AddProfileModal
           onClose={() => setShowAdd(false)}
-          onCreated={() => { setShowAdd(false); load(); }}
+          onCreated={(slug) => {
+            localStorage.setItem(STORAGE_KEY, slug);
+            setShowAdd(false);
+            load().then(() => {
+              window.dispatchEvent(new CustomEvent("profile-changed", { detail: slug }));
+            });
+          }}
         />
       )}
     </>
