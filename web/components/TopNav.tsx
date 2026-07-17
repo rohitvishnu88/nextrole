@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, Briefcase, Search, Info } from "lucide-react";
+import { LayoutDashboard, FileText, Briefcase, Search, ListChecks, Info } from "lucide-react";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 
 const nav = [
   { href: "/",             label: "Dashboard",    icon: LayoutDashboard },
   { href: "/tailor",       label: "Tailor Resume", icon: FileText },
+  { href: "/jobs",         label: "Jobs",          icon: ListChecks },
   { href: "/applications", label: "Applications",  icon: Briefcase },
   { href: "/search-brief", label: "Search Brief",  icon: Search },
   { href: "/about",        label: "About",          icon: Info },
