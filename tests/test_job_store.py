@@ -210,6 +210,40 @@ def test_merge_job_leaves_applied_record_untouched_except_last_seen():
     assert record["last_seen_at"] == "2026-07-17T00:00:00"
 
 
+def test_merge_job_leaves_dismissed_record_untouched_except_last_seen():
+    url = "https://boards.greenhouse.io/acme/jobs/1"
+    job_id = job_store.make_job_id(url)
+    store = {"jobs": {job_id: {
+        "id": job_id, "status": "dismissed", "relevance_score": 5, "match_reason": "old reason",
+        "first_seen_at": "2026-07-01T00:00:00", "last_seen_at": "2026-07-01T00:00:00",
+    }}}
+    candidate = {"source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+                 "location": "London", "url": url, "relevance_score": 9, "match_reason": "new reason"}
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    record = store["jobs"][job_id]
+    assert record["status"] == "dismissed"
+    assert record["relevance_score"] == 5
+    assert record["match_reason"] == "old reason"
+    assert record["last_seen_at"] == "2026-07-17T00:00:00"
+
+
+def test_merge_job_leaves_closed_record_untouched_except_last_seen():
+    url = "https://boards.greenhouse.io/acme/jobs/1"
+    job_id = job_store.make_job_id(url)
+    store = {"jobs": {job_id: {
+        "id": job_id, "status": "closed", "relevance_score": 5, "match_reason": "old reason",
+        "first_seen_at": "2026-07-01T00:00:00", "last_seen_at": "2026-07-01T00:00:00",
+    }}}
+    candidate = {"source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+                 "location": "London", "url": url, "relevance_score": 9, "match_reason": "new reason"}
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    record = store["jobs"][job_id]
+    assert record["status"] == "closed"
+    assert record["relevance_score"] == 5
+    assert record["match_reason"] == "old reason"
+    assert record["last_seen_at"] == "2026-07-17T00:00:00"
+
+
 def test_mark_status_updates_existing_job():
     store = {"jobs": {"abc": {"id": "abc", "status": "new"}}}
     assert job_store.mark_status(store, "abc", "applied") is True
