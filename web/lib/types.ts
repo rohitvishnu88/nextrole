@@ -83,3 +83,27 @@ export interface SearchBrief {
   headline: string;
   signals: Signal[];
 }
+
+export type JobSource = "linkedin" | "greenhouse" | "lever" | "yc";
+export type JobStatus = "new" | "seen" | "applied" | "dismissed" | "closed";
+
+export interface JobMatch {
+  id: string;
+  source: JobSource;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  relevance_score: number;
+  match_reason: string;
+  status: JobStatus;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+export interface JobSearchResult {
+  status?: "searching";
+  generated_at?: string;
+  jobs?: JobMatch[];
+  error?: string | null;
+}
