@@ -13,23 +13,34 @@ export default function JobsPage() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const requestIdRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!profile) return;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     try {
       const result = await api.getJobMatches(profile);
+      if (requestIdRef.current !== requestId) return;
       if (result.status === "searching") {
         setSearching(true);
       } else {
         setSearching(false);
         setJobs(result.jobs ?? []);
+        setError("");
       }
     } catch {
+      if (requestIdRef.current !== requestId) return;
       setError("Failed to load job matches.");
     } finally {
-      setLoading(false);
+      if (requestIdRef.current === requestId) setLoading(false);
     }
+  }, [profile]);
+
+  useEffect(() => {
+    setJobs([]);
+    setError("");
+    setSearching(false);
   }, [profile]);
 
   useEffect(() => { load(); }, [load]);
@@ -86,6 +97,13 @@ export default function JobsPage() {
       {error && (
         <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-4 text-sm text-red-600">
           {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center gap-2 text-muted text-sm py-4">
+          <Loader2 size={14} className="animate-spin" />
+          Loading jobs…
         </div>
       )}
 
