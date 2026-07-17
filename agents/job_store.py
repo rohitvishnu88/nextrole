@@ -41,3 +41,20 @@ def save_store(profile_slug: str, store: dict) -> None:
     path = profile_jobs_path(profile_slug)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def make_job_id(url: str) -> str:
+    return hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
+
+
+def derive_source(url: str) -> str:
+    host = urlparse(url).netloc.lower()
+    if "greenhouse.io" in host:
+        return "greenhouse"
+    if "lever.co" in host:
+        return "lever"
+    if "workatastartup.com" in host:
+        return "yc"
+    if "linkedin.com" in host:
+        return "linkedin"
+    return "other"

@@ -83,3 +83,36 @@ def test_load_store_handles_bare_list_top_level(tmp_path, monkeypatch):
     path.write_text(json.dumps([{"title": "Old Job"}]))
     store = job_store.load_store("rohit")
     assert store == {"generated_at": "", "candidate": "", "jobs": {}}
+
+
+def test_make_job_id_is_stable_and_short():
+    id1 = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/12345")
+    id2 = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/12345")
+    assert id1 == id2
+    assert len(id1) == 12
+
+
+def test_make_job_id_differs_for_different_urls():
+    id1 = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/12345")
+    id2 = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/67890")
+    assert id1 != id2
+
+
+def test_derive_source_greenhouse():
+    assert job_store.derive_source("https://boards.greenhouse.io/acme/jobs/1") == "greenhouse"
+
+
+def test_derive_source_lever():
+    assert job_store.derive_source("https://jobs.lever.co/acme/abc-123") == "lever"
+
+
+def test_derive_source_yc():
+    assert job_store.derive_source("https://www.workatastartup.com/jobs/12345") == "yc"
+
+
+def test_derive_source_linkedin():
+    assert job_store.derive_source("https://www.linkedin.com/jobs/view/12345") == "linkedin"
+
+
+def test_derive_source_other():
+    assert job_store.derive_source("https://example.com/careers/1") == "other"
