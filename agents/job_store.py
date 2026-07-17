@@ -76,3 +76,51 @@ def is_cross_source_duplicate(candidate: dict, existing_jobs: dict) -> bool:
         if normalize_dedup_key(job.get("company", ""), job.get("title", "")) == key:
             return True
     return False
+
+
+def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
+    jobs = store.setdefault("jobs", {})
+    job_id = make_job_id(candidate["url"])
+    existing = jobs.get(job_id)
+    if existing is None:
+        jobs[job_id] = {
+            "id": job_id,
+            "source": candidate["source"],
+            "title": candidate["title"],
+            "company": candidate["company"],
+            "location": candidate.get("location", ""),
+            "url": candidate["url"],
+            "relevance_score": candidate.get("relevance_score", 0),
+            "match_reason": candidate.get("match_reason", ""),
+            "status": "new",
+            "first_seen_at": now_iso,
+            "last_seen_at": now_iso,
+            "last_verified_at": now_iso,
+        }
+        return
+    existing["last_seen_at"] = now_iso
+    if existing["status"] in ("new", "seen"):
+        existing["relevance_score"] = candidate.get("relevance_score", existing["relevance_score"])
+        existing["match_reason"] = candidate.get("match_reason", existing["match_reason"])
+
+
+def mark_status(store: dict, job_id: str, status: str) -> bool:
+    job = store.get("jobs", {}).get(job_id)
+    if job is None:
+        return False
+    job["status"] = status
+    return True
+
+
+def mark_new_as_seen(store: dict) -> bool:
+    changed = False
+    for job in store.get("jobs", {}).values():
+        if job.get("status") == "new":
+            job["status"] = "seen"
+            changed = True
+    return changed
+
+
+def visible_jobs(store: dict) -> list:
+    jobs = [j for j in store.get("jobs", {}).values() if j.get("status") not in ("dismissed", "closed")]
+    return sorted(jobs, key=lambda j: j.get("relevance_score", 0), reverse=True)

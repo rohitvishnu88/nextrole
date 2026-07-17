@@ -159,3 +159,90 @@ def test_is_cross_source_duplicate_ignores_other_yc_records():
         "abc": {"source": "yc", "company": "Acme", "title": "Data Engineer"},
     }
     assert job_store.is_cross_source_duplicate(candidate, existing) is False
+
+
+def test_merge_job_adds_new_record():
+    store = {"jobs": {}}
+    candidate = {
+        "source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+        "location": "London", "url": "https://boards.greenhouse.io/acme/jobs/1",
+        "relevance_score": 8, "match_reason": "Good fit",
+    }
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    job_id = job_store.make_job_id(candidate["url"])
+    assert store["jobs"][job_id]["status"] == "new"
+    assert store["jobs"][job_id]["first_seen_at"] == "2026-07-17T00:00:00"
+    assert store["jobs"][job_id]["last_seen_at"] == "2026-07-17T00:00:00"
+
+
+def test_merge_job_refreshes_new_or_seen_record():
+    url = "https://boards.greenhouse.io/acme/jobs/1"
+    job_id = job_store.make_job_id(url)
+    store = {"jobs": {job_id: {
+        "id": job_id, "status": "seen", "relevance_score": 5, "match_reason": "old reason",
+        "first_seen_at": "2026-07-01T00:00:00", "last_seen_at": "2026-07-01T00:00:00",
+    }}}
+    candidate = {"source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+                 "location": "London", "url": url, "relevance_score": 9, "match_reason": "new reason"}
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    record = store["jobs"][job_id]
+    assert record["status"] == "seen"
+    assert record["relevance_score"] == 9
+    assert record["match_reason"] == "new reason"
+    assert record["last_seen_at"] == "2026-07-17T00:00:00"
+    assert record["first_seen_at"] == "2026-07-01T00:00:00"
+
+
+def test_merge_job_leaves_applied_record_untouched_except_last_seen():
+    url = "https://boards.greenhouse.io/acme/jobs/1"
+    job_id = job_store.make_job_id(url)
+    store = {"jobs": {job_id: {
+        "id": job_id, "status": "applied", "relevance_score": 5, "match_reason": "old reason",
+        "first_seen_at": "2026-07-01T00:00:00", "last_seen_at": "2026-07-01T00:00:00",
+    }}}
+    candidate = {"source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+                 "location": "London", "url": url, "relevance_score": 9, "match_reason": "new reason"}
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    record = store["jobs"][job_id]
+    assert record["status"] == "applied"
+    assert record["relevance_score"] == 5
+    assert record["match_reason"] == "old reason"
+    assert record["last_seen_at"] == "2026-07-17T00:00:00"
+
+
+def test_mark_status_updates_existing_job():
+    store = {"jobs": {"abc": {"id": "abc", "status": "new"}}}
+    assert job_store.mark_status(store, "abc", "applied") is True
+    assert store["jobs"]["abc"]["status"] == "applied"
+
+
+def test_mark_status_returns_false_for_unknown_id():
+    store = {"jobs": {}}
+    assert job_store.mark_status(store, "missing", "applied") is False
+
+
+def test_mark_new_as_seen_transitions_only_new_jobs():
+    store = {"jobs": {
+        "a": {"id": "a", "status": "new"},
+        "b": {"id": "b", "status": "applied"},
+    }}
+    changed = job_store.mark_new_as_seen(store)
+    assert changed is True
+    assert store["jobs"]["a"]["status"] == "seen"
+    assert store["jobs"]["b"]["status"] == "applied"
+
+
+def test_mark_new_as_seen_returns_false_when_nothing_new():
+    store = {"jobs": {"a": {"id": "a", "status": "seen"}}}
+    assert job_store.mark_new_as_seen(store) is False
+
+
+def test_visible_jobs_excludes_dismissed_and_closed_sorted_by_score():
+    store = {"jobs": {
+        "a": {"id": "a", "status": "new", "relevance_score": 5},
+        "b": {"id": "b", "status": "dismissed", "relevance_score": 9},
+        "c": {"id": "c", "status": "closed", "relevance_score": 9},
+        "d": {"id": "d", "status": "seen", "relevance_score": 8},
+    }}
+    visible = job_store.visible_jobs(store)
+    assert [j["id"] for j in visible] == ["d", "a"]
