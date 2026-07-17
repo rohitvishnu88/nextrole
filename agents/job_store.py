@@ -19,11 +19,18 @@ def _output_dir() -> Path:
     return Path(base)
 
 
+_SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+
+
+def validate_slug(profile_slug: str) -> None:
+    if profile_slug and not _SLUG_RE.match(profile_slug):
+        raise ValueError(f"invalid profile_slug: {profile_slug!r}")
+
+
 def profile_jobs_path(profile_slug: str) -> Path:
+    validate_slug(profile_slug)
     if not profile_slug:
         return _output_dir() / "jobs" / "jobs.json"
-    if not re.match(r"^[a-z0-9-]+$", profile_slug):
-        raise ValueError(f"invalid profile_slug: {profile_slug!r}")
     return _output_dir() / "profiles" / profile_slug / "jobs.json"
 
 

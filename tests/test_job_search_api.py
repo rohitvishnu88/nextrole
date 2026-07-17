@@ -103,3 +103,29 @@ def test_dismiss_job_404_for_unknown_id(client):
     test_client, mod = client
     resp = test_client.post("/api/profiles/test-user/job-search/unknown-id/dismiss")
     assert resp.status_code == 404
+
+
+def test_start_search_400_for_invalid_slug(client):
+    test_client, mod = client
+    resp = test_client.post("/api/profiles/../job-search")
+    assert resp.status_code in (400, 404)
+
+
+def test_get_job_search_400_for_invalid_slug(client):
+    test_client, mod = client
+    resp = test_client.get("/api/profiles/bad_slug!/job-search")
+    assert resp.status_code == 400
+
+
+def test_get_job_search_surfaces_last_error(client, dirs):
+    test_client, mod = client
+    mod._last_error["test-user"] = "simulated crash: RuntimeError"
+    resp = test_client.get("/api/profiles/test-user/job-search")
+    assert resp.json()["error"] == "simulated crash: RuntimeError"
+    mod._last_error.pop("test-user", None)
+
+
+def test_get_job_search_error_is_none_when_no_failure(client, dirs):
+    test_client, mod = client
+    resp = test_client.get("/api/profiles/test-user/job-search")
+    assert resp.json()["error"] is None

@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -12,6 +13,15 @@ import job_search_agent
 router = APIRouter(prefix="/api/profiles", tags=["job-search"])
 
 _running: set = set()
+_running_lock = threading.Lock()
+_last_error: dict = {}
+
+
+def _require_valid_slug(slug: str) -> None:
+    try:
+        job_store.validate_slug(slug)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid profile slug")
 
 
 def _profiles_dir() -> Path:
@@ -25,37 +35,48 @@ def _resume_file(slug: str) -> Path:
 
 
 def _run_search(slug: str) -> None:
+    _last_error.pop(slug, None)
     try:
         resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
         job_search_agent.run(resume, profile_slug=slug)
+    except Exception as e:
+        _last_error[slug] = str(e)
     finally:
         _running.discard(slug)
 
 
 @router.post("/{slug}/job-search")
 def start_job_search(slug: str, background_tasks: BackgroundTasks):
+    _require_valid_slug(slug)
     if not _resume_file(slug).exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
-    if slug in _running:
-        raise HTTPException(status_code=409, detail="A search is already running for this profile")
-    _running.add(slug)
+    with _running_lock:
+        if slug in _running:
+            raise HTTPException(status_code=409, detail="A search is already running for this profile")
+        _running.add(slug)
     background_tasks.add_task(_run_search, slug)
     return {"status": "searching"}
 
 
 @router.get("/{slug}/job-search")
 def get_job_search(slug: str):
+    _require_valid_slug(slug)
     if slug in _running:
         return {"status": "searching"}
     store = job_store.load_store(slug)
     jobs = [dict(job) for job in job_store.visible_jobs(store)]
     if job_store.mark_new_as_seen(store):
         job_store.save_store(slug, store)
-    return {"generated_at": store.get("generated_at", ""), "jobs": jobs}
+    return {
+        "generated_at": store.get("generated_at", ""),
+        "jobs": jobs,
+        "error": _last_error.get(slug),
+    }
 
 
 @router.post("/{slug}/job-search/{job_id}/apply")
 def apply_to_job(slug: str, job_id: str):
+    _require_valid_slug(slug)
     store = job_store.load_store(slug)
     if not job_store.mark_status(store, job_id, "applied"):
         raise HTTPException(status_code=404, detail="Job not found")
@@ -65,6 +86,7 @@ def apply_to_job(slug: str, job_id: str):
 
 @router.post("/{slug}/job-search/{job_id}/dismiss")
 def dismiss_job(slug: str, job_id: str):
+    _require_valid_slug(slug)
     store = job_store.load_store(slug)
     if not job_store.mark_status(store, job_id, "dismissed"):
         raise HTTPException(status_code=404, detail="Job not found")
