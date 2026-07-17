@@ -11,7 +11,7 @@ import smtplib
 import ssl
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -31,18 +31,6 @@ RESUME_FILE = ROOT / "data" / "resume_data.json"
 MODEL = DEFAULT_MODEL
 MAX_RESULTS_PER_QUERY = 5
 SEARCH_DOMAINS = ["linkedin.com", "boards.greenhouse.io", "jobs.lever.co", "workatastartup.com"]
-
-
-def load_json(path, default):
-    if Path(path).exists():
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    return default
-
-
-def save_json(path: str, data) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
 
 
 def build_profile_summary(resume: dict, profile_slug: str = "") -> str:
@@ -174,8 +162,6 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
     anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     tavily_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
 
-    seen_urls: set = set(load_json(SEEN_FILE, []))
-    applied_urls: set = set(load_json(APPLIED_FILE, []))
     profile = build_profile_summary(resume, profile_slug)
 
     tools = [
@@ -356,45 +342,61 @@ Return ONLY a JSON array, no other text:
 
             messages.append({"role": "user", "content": tool_results})
 
-    # Filter applied jobs
-    all_jobs = [j for j in all_jobs if j.get("url") not in applied_urls]
-
-    # Split into new vs previously seen
-    new_jobs = [j for j in all_jobs if j.get("url") not in seen_urls]
-    old_jobs = [j for j in all_jobs if j.get("url") in seen_urls] if include_seen else []
-
-    # Update seen list
-    for job in all_jobs:
-        if job.get("url"):
-            seen_urls.add(job["url"])
-    save_json(SEEN_FILE, list(seen_urls))
-
-    # Send email for new jobs
-    if new_jobs:
-        candidate_name = resume.get("name", "Candidate")
-        print(f"  Sending email for {len(new_jobs)} new job(s)...")
+    def _verify_open(url: str) -> bool:
+        greenhouse = job_freshness.parse_greenhouse(url)
+        if greenhouse:
+            return job_freshness.check_greenhouse_open(*greenhouse)
+        lever = job_freshness.parse_lever(url)
+        if lever:
+            return job_freshness.check_lever_open(*lever)
         try:
-            send_email(new_jobs, candidate_name)
+            result = tavily_client.extract(urls=[url])
+            content = result["results"][0].get("raw_content", "") if result.get("results") else ""
+        except Exception:
+            return True
+        return not job_freshness.looks_closed(content)
+
+    store = job_store.load_store(profile_slug)
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
+    ids_before = set(store.get("jobs", {}).keys())
+    job_store.process_search_results(all_jobs, store, now_iso, verify_open=_verify_open)
+    job_store.reverify_stale_jobs(store, now, verify_open=_verify_open)
+
+    newly_added_ids = set(store.get("jobs", {}).keys()) - ids_before
+    freshly_new_jobs = [store["jobs"][jid] for jid in newly_added_ids]
+
+    if freshly_new_jobs:
+        candidate_name = resume.get("name", "Candidate")
+        print(f"  Sending email for {len(freshly_new_jobs)} new job(s)...")
+        try:
+            send_email(freshly_new_jobs, candidate_name)
         except Exception as e:
             print(f"  ⚠️  Email failed: {e}")
 
-    jobs_sorted = sorted(all_jobs if include_seen else new_jobs,
-                         key=lambda x: x.get("relevance_score", 0), reverse=True)
+    job_store.save_store(profile_slug, store)
+
+    visible = job_store.visible_jobs(store)
+    jobs_sorted = visible if include_seen else [j for j in visible if j.get("status") == "new"]
 
     output = {
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": now_iso,
         "candidate": resume.get("name", ""),
         "total_jobs": len(jobs_sorted),
-        "new_jobs": len(new_jobs),
+        "new_jobs": len([j for j in visible if j.get("status") == "new"]),
         "jobs": jobs_sorted,
     }
-
-    save_json(JOBS_FILE, output)
     return output
 
 
-def mark_applied(url: str) -> None:
-    applied = set(load_json(APPLIED_FILE, []))
-    applied.add(url)
-    save_json(APPLIED_FILE, list(applied))
-    print(f"✅ Marked as applied: {url}")
+def mark_applied(url: str, profile_slug: str = "") -> bool:
+    store = job_store.load_store(profile_slug)
+    job_id = job_store.make_job_id(url)
+    ok = job_store.mark_status(store, job_id, "applied")
+    if ok:
+        job_store.save_store(profile_slug, store)
+        print(f"✅ Marked as applied: {url}")
+    else:
+        print(f"⚠️  URL not found in job store, nothing to mark: {url}")
+    return ok

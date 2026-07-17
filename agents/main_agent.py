@@ -123,7 +123,7 @@ def main():
 
     # Handle --applied flag
     if args.applied:
-        job_search_agent.mark_applied(args.applied)
+        job_search_agent.mark_applied(args.applied, profile_slug)
         return
 
     # Handle --tailor flag
