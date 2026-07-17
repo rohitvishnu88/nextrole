@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult } from "./types";
 
 const BASE = "/api";
 
@@ -125,3 +125,16 @@ export const deleteSignal = (slug: string, signalId: string) =>
   req<{ deleted: string }>(`/profiles/${slug}/search-brief/signals/${signalId}`, {
     method: "DELETE",
   });
+
+// Job Search
+export const searchJobs = (slug: string) =>
+  req<{ status: string }>(`/profiles/${slug}/job-search`, { method: "POST" });
+
+export const getJobMatches = (slug: string) =>
+  req<JobSearchResult>(`/profiles/${slug}/job-search`);
+
+export const applyToJob = (slug: string, jobId: string) =>
+  req<{ id: string; status: string }>(`/profiles/${slug}/job-search/${jobId}/apply`, { method: "POST" });
+
+export const dismissJob = (slug: string, jobId: string) =>
+  req<{ id: string; status: string }>(`/profiles/${slug}/job-search/${jobId}/dismiss`, { method: "POST" });
