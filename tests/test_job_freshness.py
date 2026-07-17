@@ -106,3 +106,40 @@ def test_check_lever_open_true_on_200(monkeypatch):
 
     monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
     assert job_freshness.check_lever_open("acme", "abc") is True
+
+
+def test_parse_greenhouse_rejects_wrong_host():
+    url = "https://tracking.example.com/click?dest=boards.greenhouse.io/acme/jobs/123"
+    assert job_freshness.parse_greenhouse(url) is None
+
+
+def test_parse_lever_rejects_wrong_host():
+    url = "https://tracking.example.com/click?dest=jobs.lever.co/acme/abc-123"
+    assert job_freshness.parse_lever(url) is None
+
+
+def test_check_greenhouse_open_returns_true_on_network_error(monkeypatch):
+    def fake_get(url, timeout):
+        raise OSError("network unreachable")
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_greenhouse_open("acme", "123") is True
+
+
+def test_check_lever_open_returns_true_on_network_error(monkeypatch):
+    def fake_get(url, timeout):
+        raise OSError("network unreachable")
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_lever_open("acme", "abc") is True
+
+
+def test_check_lever_open_false_on_404(monkeypatch):
+    class FakeResponse:
+        status_code = 404
+
+    def fake_get(url, timeout):
+        return FakeResponse()
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_lever_open("acme", "abc") is False

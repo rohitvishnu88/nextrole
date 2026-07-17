@@ -1,5 +1,6 @@
 """Freshness verification for job postings: closure detection and re-verify cadence."""
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 import re
 import httpx
 
@@ -33,27 +34,39 @@ def needs_reverify(last_verified_at_iso: str, now: datetime) -> bool:
 
 
 def parse_greenhouse(url: str):
-    match = re.search(r"boards\.greenhouse\.io/([^/]+)/jobs/(\d+)", url)
+    parsed = urlparse(url)
+    if parsed.netloc.lower() != "boards.greenhouse.io":
+        return None
+    match = re.search(r"^/([A-Za-z0-9_-]+)/jobs/(\d+)", parsed.path)
     if not match:
         return None
     return match.group(1), match.group(2)
 
 
 def parse_lever(url: str):
-    match = re.search(r"jobs\.lever\.co/([^/]+)/([0-9a-fA-F-]+)", url)
+    parsed = urlparse(url)
+    if parsed.netloc.lower() != "jobs.lever.co":
+        return None
+    match = re.search(r"^/([A-Za-z0-9_-]+)/([0-9a-fA-F-]+)", parsed.path)
     if not match:
         return None
     return match.group(1), match.group(2)
 
 
 def check_greenhouse_open(company: str, posting_id: str) -> bool:
-    resp = httpx.get(
-        f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs/{posting_id}",
-        timeout=10,
-    )
+    try:
+        resp = httpx.get(
+            f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs/{posting_id}",
+            timeout=10,
+        )
+    except Exception:
+        return True
     return resp.status_code == 200
 
 
 def check_lever_open(company: str, posting_id: str) -> bool:
-    resp = httpx.get(f"https://api.lever.co/v0/postings/{company}/{posting_id}", timeout=10)
+    try:
+        resp = httpx.get(f"https://api.lever.co/v0/postings/{company}/{posting_id}", timeout=10)
+    except Exception:
+        return True
     return resp.status_code == 200
