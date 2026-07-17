@@ -73,6 +73,8 @@ def build_profile_summary(resume: dict, profile_slug: str = "") -> str:
         current_title   = exp[0].get("title", "") if exp else ""
         current_company = exp[0].get("company", "") if exp else ""
 
+        feedback_summary = job_store.build_feedback_summary(job_store.load_store(profile_slug))
+
         return f"""Candidate: {name}
 Seniority target: {", ".join(seniority) if seniority else "Senior/Principal"}
 Current role: {current_title} at {current_company}
@@ -94,7 +96,8 @@ Additional context:
 
 Hard requirements:
 - Posted within the last 5 days. Discard anything older.
-- Jobs from LinkedIn, Greenhouse, Lever, or workatastartup.com only."""
+- Jobs from LinkedIn, Greenhouse, Lever, or workatastartup.com only.
+{f"{chr(10)}{feedback_summary}" if feedback_summary else ""}"""
 
     # Fallback: original hardcoded profile
     titles    = [exp.get("title", "") for exp in resume.get("experience", [])[:3]]
