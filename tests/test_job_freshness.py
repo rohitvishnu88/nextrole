@@ -55,3 +55,54 @@ def test_needs_reverify_exact_24h_boundary_counts_as_due():
 
 def test_looks_closed_empty_string_is_false():
     assert job_freshness.looks_closed("") is False
+
+
+def test_parse_greenhouse_extracts_company_and_id():
+    url = "https://boards.greenhouse.io/acme/jobs/4567890"
+    assert job_freshness.parse_greenhouse(url) == ("acme", "4567890")
+
+
+def test_parse_greenhouse_returns_none_for_non_matching_url():
+    assert job_freshness.parse_greenhouse("https://boards.greenhouse.io/acme/about") is None
+
+
+def test_parse_lever_extracts_company_and_id():
+    url = "https://jobs.lever.co/acme/1a2b3c4d-5e6f-7890-abcd-ef1234567890"
+    assert job_freshness.parse_lever(url) == ("acme", "1a2b3c4d-5e6f-7890-abcd-ef1234567890")
+
+
+def test_parse_lever_returns_none_for_non_matching_url():
+    assert job_freshness.parse_lever("https://jobs.lever.co/acme") is None
+
+
+def test_check_greenhouse_open_true_on_200(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+    def fake_get(url, timeout):
+        return FakeResponse()
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_greenhouse_open("acme", "123") is True
+
+
+def test_check_greenhouse_open_false_on_404(monkeypatch):
+    class FakeResponse:
+        status_code = 404
+
+    def fake_get(url, timeout):
+        return FakeResponse()
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_greenhouse_open("acme", "123") is False
+
+
+def test_check_lever_open_true_on_200(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+    def fake_get(url, timeout):
+        return FakeResponse()
+
+    monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
+    assert job_freshness.check_lever_open("acme", "abc") is True
