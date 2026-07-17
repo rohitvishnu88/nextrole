@@ -30,12 +30,16 @@ export function JobCard({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleApply() {
     setBusy(true);
+    setError("");
     try {
       await api.applyToJob(profile, job.id);
       onRemove(job.id);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to apply");
     } finally {
       setBusy(false);
     }
@@ -43,9 +47,12 @@ export function JobCard({
 
   async function handleDismiss() {
     setBusy(true);
+    setError("");
     try {
       await api.dismissJob(profile, job.id);
       onRemove(job.id);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to dismiss");
     } finally {
       setBusy(false);
     }
@@ -53,9 +60,12 @@ export function JobCard({
 
   async function handleTailor() {
     setBusy(true);
+    setError("");
     try {
       const res = await api.startTailor(profile, job.url);
       router.push(`/tailor?job=${res.job_id}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to start tailoring");
     } finally {
       setBusy(false);
     }
@@ -80,6 +90,8 @@ export function JobCard({
 
       <p className="text-sm text-navy">{job.match_reason}</p>
       <p className="text-xs text-muted">Match score: {job.relevance_score}/10</p>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className="flex items-center gap-2 pt-1">
         <a
