@@ -140,6 +140,7 @@ def visible_jobs(store: dict) -> list:
 
 
 def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_open) -> None:
+    now = datetime.fromisoformat(now_iso)
     tagged = []
     for raw in raw_jobs:
         job = dict(raw)
@@ -162,8 +163,16 @@ def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_ope
         kept.append(job)
 
     for job in kept:
-        if verify_open(job["url"]):
-            merge_job(store, job, now_iso)
+        job_id = make_job_id(job["url"])
+        existing = store.get("jobs", {}).get(job_id)
+        already_fresh = (
+            existing is not None
+            and existing.get("status") in ("new", "seen")
+            and not job_freshness.needs_reverify(existing.get("last_verified_at", ""), now)
+        )
+        if not already_fresh and not verify_open(job["url"]):
+            continue
+        merge_job(store, job, now_iso)
 
 
 def reverify_stale_jobs(store: dict, now, verify_open) -> None:

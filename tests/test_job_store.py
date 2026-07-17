@@ -364,6 +364,46 @@ def test_process_search_results_skips_job_missing_title():
     assert len(store["jobs"]) == 0
 
 
+def test_process_search_results_skips_verify_for_recently_verified_job():
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    existing_id = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/1")
+    store = {"jobs": {existing_id: {
+        "id": existing_id, "source": "greenhouse", "company": "Acme", "title": "Data Engineer",
+        "status": "seen", "relevance_score": 5, "match_reason": "old",
+        "last_verified_at": now_iso, "last_seen_at": now_iso, "first_seen_at": now_iso,
+    }}}
+    calls = []
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 9, "match_reason": "still fits"},
+    ]
+    job_store.process_search_results(raw_jobs, store, now_iso, verify_open=lambda url: calls.append(url) or True)
+    assert calls == []
+    assert store["jobs"][existing_id]["relevance_score"] == 9
+
+
+def test_process_search_results_still_verifies_stale_existing_job():
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    stale_verified_at = (now - timedelta(hours=25)).isoformat()
+    existing_id = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/1")
+    store = {"jobs": {existing_id: {
+        "id": existing_id, "source": "greenhouse", "company": "Acme", "title": "Data Engineer",
+        "status": "seen", "relevance_score": 5, "match_reason": "old",
+        "last_verified_at": stale_verified_at, "last_seen_at": stale_verified_at, "first_seen_at": stale_verified_at,
+    }}}
+    calls = []
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 9, "match_reason": "still fits"},
+    ]
+    job_store.process_search_results(raw_jobs, store, now_iso, verify_open=lambda url: calls.append(url) or True)
+    assert calls == ["https://boards.greenhouse.io/acme/jobs/1"]
+
+
 def test_reverify_stale_jobs_marks_closed_when_verify_fails():
     now = datetime.now(timezone.utc)
     stale = (now - timedelta(hours=25)).isoformat()

@@ -27,7 +27,7 @@ export default function JobsPage() {
       } else {
         setSearching(false);
         setJobs(result.jobs ?? []);
-        setError("");
+        setError(result.error ?? "");
       }
     } catch {
       if (requestIdRef.current !== requestId) return;
