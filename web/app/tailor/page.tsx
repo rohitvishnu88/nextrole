@@ -17,11 +17,15 @@ function TailorPageInner() {
   const [error, setError] = useState("");
   const [showAddToTracker, setShowAddToTracker] = useState(false);
 
-  // Restore completed job when redirected back from the edit page
+  // Restore a job when arriving via ?job= — either completed (redirect back from
+  // the edit page) or still running (started from the Jobs page's Tailor button).
   useEffect(() => {
     const jobParam = searchParams.get("job");
     if (!jobParam || job) return;
-    api.getTailorStatus(jobParam).then(setJob).catch(() => {});
+    api.getTailorStatus(jobParam).then((status) => {
+      setJob(status);
+      if (status.status === "running") setPolling(true);
+    }).catch(() => {});
   }, [searchParams, job]);
 
   async function handleSubmit() {
