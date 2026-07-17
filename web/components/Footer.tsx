@@ -6,6 +6,7 @@ const sitemap = [
     links: [
       { label: "Dashboard",    href: "/" },
       { label: "Tailor Resume", href: "/tailor" },
+      { label: "Jobs",          href: "/jobs" },
       { label: "Applications",  href: "/applications" },
       { label: "Search Brief",  href: "/search-brief" },
     ],
