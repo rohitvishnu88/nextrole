@@ -17,6 +17,8 @@ def _output_dir() -> Path:
 def profile_jobs_path(profile_slug: str) -> Path:
     if not profile_slug:
         return _output_dir() / "jobs" / "jobs.json"
+    if not re.match(r"^[a-z0-9-]+$", profile_slug):
+        raise ValueError(f"invalid profile_slug: {profile_slug!r}")
     return _output_dir() / "profiles" / profile_slug / "jobs.json"
 
 
@@ -25,7 +27,12 @@ def load_store(profile_slug: str) -> dict:
     if not path.exists():
         return {"generated_at": "", "candidate": "", "jobs": {}}
     data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data.get("jobs"), dict):
+    if not isinstance(data, dict):
+        data = {}
+    data.setdefault("generated_at", "")
+    data.setdefault("candidate", "")
+    data.setdefault("jobs", {})
+    if not isinstance(data["jobs"], dict):
         data["jobs"] = {}
     return data
 
