@@ -427,3 +427,29 @@ def test_build_feedback_summary_caps_at_n_most_recent():
     summary = job_store.build_feedback_summary(store, n=10)
     assert "Role 14" in summary
     assert "Role 0" not in summary
+
+
+def test_merge_job_refreshes_last_verified_at_for_existing_new_or_seen_record():
+    url = "https://boards.greenhouse.io/acme/jobs/1"
+    job_id = job_store.make_job_id(url)
+    store = {"jobs": {job_id: {
+        "id": job_id, "status": "seen", "relevance_score": 5, "match_reason": "old reason",
+        "first_seen_at": "2026-07-01T00:00:00", "last_seen_at": "2026-07-01T00:00:00",
+        "last_verified_at": "2026-07-01T00:00:00",
+    }}}
+    candidate = {"source": "greenhouse", "title": "Data Engineer", "company": "Acme",
+                 "location": "London", "url": url, "relevance_score": 9, "match_reason": "new reason"}
+    job_store.merge_job(store, candidate, "2026-07-17T00:00:00")
+    assert store["jobs"][job_id]["last_verified_at"] == "2026-07-17T00:00:00"
+
+
+def test_build_feedback_summary_sorts_by_actual_timestamp_not_insertion_order():
+    store = {"jobs": {
+        "a": {"title": "Older Role", "company": "Acme", "status": "dismissed", "last_seen_at": "2026-07-01T00:00:00"},
+        "b": {"title": "Newer Role", "company": "Acme", "status": "dismissed", "last_seen_at": "2026-07-15T00:00:00"},
+        "c": {"title": "Middle Role", "company": "Acme", "status": "dismissed", "last_seen_at": "2026-07-10T00:00:00"},
+    }}
+    summary = job_store.build_feedback_summary(store, n=2)
+    assert "Newer Role" in summary
+    assert "Middle Role" in summary
+    assert "Older Role" not in summary

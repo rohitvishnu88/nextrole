@@ -4,6 +4,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -106,6 +107,7 @@ def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
     if existing["status"] in ("new", "seen"):
         existing["relevance_score"] = candidate.get("relevance_score", existing["relevance_score"])
         existing["match_reason"] = candidate.get("match_reason", existing["match_reason"])
+        existing["last_verified_at"] = now_iso
 
 
 def mark_status(store: dict, job_id: str, status: str) -> bool:
@@ -169,14 +171,22 @@ def reverify_stale_jobs(store: dict, now, verify_open) -> None:
 
 
 def build_feedback_summary(store: dict, n: int = 10) -> str:
+    def sort_key(j: dict):
+        raw = j.get("last_seen_at", "")
+        try:
+            dt = datetime.fromisoformat(raw)
+        except ValueError:
+            return datetime.min
+        return dt.replace(tzinfo=None)
+
     jobs = list(store.get("jobs", {}).values())
     applied = sorted(
         [j for j in jobs if j.get("status") == "applied"],
-        key=lambda j: j.get("last_seen_at", ""), reverse=True,
+        key=sort_key, reverse=True,
     )[:n]
     dismissed = sorted(
         [j for j in jobs if j.get("status") == "dismissed"],
-        key=lambda j: j.get("last_seen_at", ""), reverse=True,
+        key=sort_key, reverse=True,
     )[:n]
     if not applied and not dismissed:
         return ""
