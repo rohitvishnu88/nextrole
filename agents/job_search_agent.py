@@ -342,27 +342,19 @@ Return ONLY a JSON array, no other text:
 
             messages.append({"role": "user", "content": tool_results})
 
-    def _verify_open(url: str) -> bool:
-        greenhouse = job_freshness.parse_greenhouse(url)
-        if greenhouse:
-            return job_freshness.check_greenhouse_open(*greenhouse)
-        lever = job_freshness.parse_lever(url)
-        if lever:
-            return job_freshness.check_lever_open(*lever)
-        try:
-            result = tavily_client.extract(urls=[url])
-            content = result["results"][0].get("raw_content", "") if result.get("results") else ""
-        except Exception:
-            return True
-        return not job_freshness.looks_closed(content)
-
     store = job_store.load_store(profile_slug)
     now = datetime.now(timezone.utc)
     now_iso = now.isoformat()
 
     ids_before = set(store.get("jobs", {}).keys())
-    job_store.process_search_results(all_jobs, store, now_iso, verify_open=_verify_open)
-    job_store.reverify_stale_jobs(store, now, verify_open=_verify_open)
+    job_store.process_search_results(
+        all_jobs, store, now_iso,
+        verify_open=lambda url: job_freshness.verify_open(url, tavily_client),
+    )
+    job_store.reverify_stale_jobs(
+        store, now,
+        verify_open=lambda url: job_freshness.verify_open(url, tavily_client),
+    )
 
     newly_added_ids = set(store.get("jobs", {}).keys()) - ids_before
     freshly_new_jobs = [store["jobs"][jid] for jid in newly_added_ids]

@@ -70,3 +70,19 @@ def check_lever_open(company: str, posting_id: str) -> bool:
     except Exception:
         return True
     return resp.status_code == 200
+
+
+def verify_open(url: str, tavily_client) -> bool:
+    greenhouse = parse_greenhouse(url)
+    if greenhouse:
+        return check_greenhouse_open(*greenhouse)
+    lever = parse_lever(url)
+    if lever:
+        return check_lever_open(*lever)
+    try:
+        result = tavily_client.extract(urls=[url])
+        content = result["results"][0].get("raw_content", "") if result.get("results") else ""
+    except Exception as e:
+        print(f"  ⚠️  Freshness check failed for {url[:60]}... assuming still open: {e}")
+        return True
+    return not looks_closed(content)

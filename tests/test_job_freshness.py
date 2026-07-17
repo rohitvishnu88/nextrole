@@ -143,3 +143,43 @@ def test_check_lever_open_false_on_404(monkeypatch):
 
     monkeypatch.setattr(job_freshness.httpx, "get", fake_get)
     assert job_freshness.check_lever_open("acme", "abc") is False
+
+
+class _FakeTavilyClient:
+    def __init__(self, content="", raises=False):
+        self.content = content
+        self.raises = raises
+
+    def extract(self, urls):
+        if self.raises:
+            raise RuntimeError("simulated Tavily failure")
+        return {"results": [{"raw_content": self.content}]}
+
+
+def test_verify_open_uses_greenhouse_api_when_url_matches(monkeypatch):
+    monkeypatch.setattr(job_freshness, "check_greenhouse_open", lambda company, posting_id: False)
+    result = job_freshness.verify_open("https://boards.greenhouse.io/acme/jobs/123", tavily_client=None)
+    assert result is False
+
+
+def test_verify_open_uses_lever_api_when_url_matches(monkeypatch):
+    monkeypatch.setattr(job_freshness, "check_lever_open", lambda company, posting_id: True)
+    result = job_freshness.verify_open("https://jobs.lever.co/acme/abc-123", tavily_client=None)
+    assert result is True
+
+
+def test_verify_open_falls_back_to_tavily_extract_for_linkedin():
+    client = _FakeTavilyClient(content="Apply now, we are hiring")
+    assert job_freshness.verify_open("https://www.linkedin.com/jobs/view/1", client) is True
+
+
+def test_verify_open_falls_back_to_tavily_extract_and_detects_closed():
+    client = _FakeTavilyClient(content="No longer accepting applications")
+    assert job_freshness.verify_open("https://www.linkedin.com/jobs/view/1", client) is False
+
+
+def test_verify_open_assumes_open_when_tavily_raises(capsys):
+    client = _FakeTavilyClient(raises=True)
+    assert job_freshness.verify_open("https://www.linkedin.com/jobs/view/1", client) is True
+    captured = capsys.readouterr()
+    assert "Freshness check failed" in captured.out
