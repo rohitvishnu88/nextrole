@@ -127,18 +127,27 @@ def visible_jobs(store: dict) -> list:
 
 
 def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_open) -> None:
-    kept = []
+    tagged = []
     for raw in raw_jobs:
         job = dict(raw)
         job["source"] = derive_source(job.get("url", ""))
         if job["source"] == "other":
             continue
+        if not all(job.get(k) for k in ("title", "company", "url")):
+            continue
+        tagged.append(job)
+
+    non_yc = [j for j in tagged if j["source"] != "yc"]
+    yc = [j for j in tagged if j["source"] == "yc"]
+
+    kept = list(non_yc)
+    for job in yc:
         combined = dict(store.get("jobs", {}))
         combined.update({f"_pending_{i}": j for i, j in enumerate(kept)})
         if is_cross_source_duplicate(job, combined):
             continue
-        if not verify_open(job["url"]):
-            continue
         kept.append(job)
+
     for job in kept:
-        merge_job(store, job, now_iso)
+        if verify_open(job["url"]):
+            merge_job(store, job, now_iso)

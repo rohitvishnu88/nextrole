@@ -337,3 +337,27 @@ def test_process_search_results_drops_yc_duplicate_within_same_batch():
     assert len(store["jobs"]) == 1
     sources = {j["source"] for j in store["jobs"].values()}
     assert sources == {"greenhouse"}
+
+
+def test_process_search_results_dedup_is_order_independent():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "Remote",
+         "url": "https://www.workatastartup.com/jobs/999", "relevance_score": 7, "match_reason": "Also fits"},
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 1
+    sources = {j["source"] for j in store["jobs"].values()}
+    assert sources == {"greenhouse"}
+
+
+def test_process_search_results_skips_job_missing_title():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 0
