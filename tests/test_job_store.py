@@ -1,0 +1,47 @@
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
+import job_store
+
+
+def test_profile_jobs_path_per_profile(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path))
+    path = job_store.profile_jobs_path("rohit")
+    assert path == tmp_path / "profiles" / "rohit" / "jobs.json"
+
+
+def test_profile_jobs_path_legacy_fallback(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path))
+    path = job_store.profile_jobs_path("")
+    assert path == tmp_path / "jobs" / "jobs.json"
+
+
+def test_load_store_missing_file_returns_empty_shape(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path))
+    store = job_store.load_store("rohit")
+    assert store == {"generated_at": "", "candidate": "", "jobs": {}}
+
+
+def test_load_store_migrates_legacy_list_shape(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path))
+    legacy_path = job_store.profile_jobs_path("")
+    legacy_path.parent.mkdir(parents=True)
+    legacy_path.write_text(json.dumps({
+        "generated_at": "2026-01-01T00:00:00",
+        "candidate": "Old Shape",
+        "total_jobs": 1,
+        "new_jobs": 1,
+        "jobs": [{"title": "Old Job", "url": "https://linkedin.com/jobs/view/1"}],
+    }))
+    store = job_store.load_store("")
+    assert store["jobs"] == {}
+    assert store["candidate"] == "Old Shape"
+
+
+def test_save_and_load_round_trip(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path))
+    store = {"generated_at": "2026-07-17T00:00:00", "candidate": "Test", "jobs": {"abc123": {"id": "abc123"}}}
+    job_store.save_store("rohit", store)
+    assert job_store.load_store("rohit") == store
