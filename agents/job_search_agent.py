@@ -22,15 +22,15 @@ from tavily import TavilyClient
 sys.path.insert(0, str(Path(__file__).parent.parent / "core"))
 from config import MODEL as DEFAULT_MODEL, extract_json_array
 
+sys.path.insert(0, str(Path(__file__).parent))
+import job_store
+import job_freshness
+
 ROOT = Path(__file__).parent.parent
 RESUME_FILE = ROOT / "data" / "resume_data.json"
-JOBS_FILE = ROOT / "output" / "jobs" / "jobs.json"
-SEEN_FILE = ROOT / "output" / "jobs" / "seen_jobs.json"
-APPLIED_FILE = ROOT / "output" / "jobs" / "applied_jobs.json"
 MODEL = DEFAULT_MODEL
 MAX_RESULTS_PER_QUERY = 5
-# LinkedIn date filter param: r432000 = past 5 days
-LINKEDIN_DATE_FILTER = "f_TPR=r432000"
+SEARCH_DOMAINS = ["linkedin.com", "boards.greenhouse.io", "jobs.lever.co", "workatastartup.com"]
 
 
 def load_json(path, default):
@@ -177,16 +177,20 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
 
     tools = [
         {
-            "name": "search_linkedin_jobs",
+            "name": "search_job_boards",
             "description": (
-                "Search LinkedIn for job listings. Returns title, company, location, URL, snippet."
+                "Search LinkedIn, Greenhouse, Lever, or Y Combinator's workatastartup.com "
+                "for job listings. Returns title, company, location, URL, snippet."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query including site:linkedin.com/jobs"
+                        "description": (
+                            "Search query including a site: filter, e.g. "
+                            "'site:boards.greenhouse.io Data Engineer'"
+                        )
                     }
                 },
                 "required": ["query"]
@@ -195,7 +199,7 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
         {
             "name": "read_job_page",
             "description": (
-                "Fetch the full content of a LinkedIn job listing URL to get the complete "
+                "Fetch the full content of a job listing URL to get the complete "
                 "job description before scoring it."
             ),
             "input_schema": {
@@ -203,7 +207,7 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
                 "properties": {
                     "url": {
                         "type": "string",
-                        "description": "Full LinkedIn job URL"
+                        "description": "Full job listing URL"
                     }
                 },
                 "required": ["url"]
@@ -211,16 +215,19 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
         }
     ]
 
-    system_prompt = """You are a job search agent. Find LinkedIn jobs posted in the last 5 days that match the candidate's profile.
+    system_prompt = """You are a job search agent. Find jobs posted in the last 5 days that match the candidate's profile.
 
 Process:
-1. Run exactly 10 searches — no more. Mix role titles and skill angles:
-   a. Direct listing: site:linkedin.com/jobs/view <role> <skills> UK
-   b. Search page: site:linkedin.com/jobs/search keywords=<role> location=UK f_TPR=r432000
+1. Run up to 16 searches across four sources — no more. Mix role titles and skill angles:
+   a. site:linkedin.com/jobs/view <role> <skills> UK
+   b. site:boards.greenhouse.io <role> <skills>
+   c. site:jobs.lever.co <role> <skills>
+   d. site:workatastartup.com <role> <skills> — treat this source as SUPPLEMENTARY: only worth
+      searching if the other three sources haven't already covered a role/skill angle well.
 2. Role angles to cover: Solution Architect, Integration Architect, API Architect, Data Architect, Senior/Lead/Principal Data Engineer, Data Platform Engineer.
 3. Skill angles to cover: MuleSoft, Apigee, Kafka, Apache Iceberg, Databricks, Snowflake, AWS data platform, Azure data platform, event-driven architecture, API management.
-4. After 10 searches, stop searching. Read the top 8 job pages then score everything.
-5. Only include jobs from linkedin.com — discard any other domains.
+4. After searching, stop. Read the top 8 job pages then score everything.
+5. Only include jobs from linkedin.com, boards.greenhouse.io, jobs.lever.co, or workatastartup.com — discard any other domain.
 6. Discard any job posted more than 5 days ago.
 
 Scoring rubric (1-10):
@@ -233,7 +240,7 @@ HARD DISCARD rules — drop immediately without scoring:
 - Any title with: Junior, Mid-level, Graduate, Associate, Entry-level, Intern
 - Any role outside UK (no US, EU, APAC unless explicitly remote-global)
 - Any role posted more than 5 days ago
-- Any domain other than linkedin.com
+- Any domain other than linkedin.com, boards.greenhouse.io, jobs.lever.co, workatastartup.com
 - Pure front-end, DevOps-only, or QA-only roles with no architecture/data/integration component
 
 Return ONLY a JSON array, no other text:
@@ -242,7 +249,7 @@ Return ONLY a JSON array, no other text:
     "title": "Job title",
     "company": "Company name",
     "location": "Location",
-    "url": "LinkedIn URL",
+    "url": "Job listing URL",
     "relevance_score": 8,
     "match_reason": "One sentence on why this fits — mention specific matching skills or experience"
   }
@@ -299,7 +306,7 @@ Return ONLY a JSON array, no other text:
                 if block.type != "tool_use":
                     continue
 
-                if block.name == "search_linkedin_jobs":
+                if block.name == "search_job_boards":
                     query = block.input["query"]
                     print(f"  Searching: {query}")
                     try:
@@ -307,13 +314,12 @@ Return ONLY a JSON array, no other text:
                             query=query,
                             max_results=MAX_RESULTS_PER_QUERY,
                             search_depth="advanced",
-                            include_domains=["linkedin.com"],
+                            include_domains=SEARCH_DOMAINS,
                         )
                         hits = results.get("results", [])
-                        # Hard filter: LinkedIn jobs only
                         hits = [
                             r for r in hits
-                            if "linkedin.com/jobs" in r.get("url", "")
+                            if job_store.derive_source(r.get("url", "")) != "other"
                         ]
                         formatted = [
                             {
