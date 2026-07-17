@@ -3,8 +3,12 @@ import hashlib
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).parent))
+import job_freshness
 
 ROOT = Path(__file__).parent.parent
 
@@ -151,3 +155,40 @@ def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_ope
     for job in kept:
         if verify_open(job["url"]):
             merge_job(store, job, now_iso)
+
+
+def reverify_stale_jobs(store: dict, now, verify_open) -> None:
+    for job in store.get("jobs", {}).values():
+        if job.get("status") not in ("new", "seen"):
+            continue
+        if not job_freshness.needs_reverify(job.get("last_verified_at", ""), now):
+            continue
+        job["last_verified_at"] = now.isoformat()
+        if not verify_open(job["url"]):
+            job["status"] = "closed"
+
+
+def build_feedback_summary(store: dict, n: int = 10) -> str:
+    jobs = list(store.get("jobs", {}).values())
+    applied = sorted(
+        [j for j in jobs if j.get("status") == "applied"],
+        key=lambda j: j.get("last_seen_at", ""), reverse=True,
+    )[:n]
+    dismissed = sorted(
+        [j for j in jobs if j.get("status") == "dismissed"],
+        key=lambda j: j.get("last_seen_at", ""), reverse=True,
+    )[:n]
+    if not applied and not dismissed:
+        return ""
+    lines = ["Recent signal from past search runs:"]
+    if applied:
+        lines.append(
+            "Applied to (positive signal — find more like these): "
+            + ", ".join(f"{j['title']} @ {j['company']}" for j in applied)
+        )
+    if dismissed:
+        lines.append(
+            "Dismissed (negative signal — avoid these patterns): "
+            + ", ".join(f"{j['title']} @ {j['company']}" for j in dismissed)
+        )
+    return "\n".join(lines)

@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -361,3 +362,68 @@ def test_process_search_results_skips_job_missing_title():
     ]
     job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
     assert len(store["jobs"]) == 0
+
+
+def test_reverify_stale_jobs_marks_closed_when_verify_fails():
+    now = datetime.now(timezone.utc)
+    stale = (now - timedelta(hours=25)).isoformat()
+    store = {"jobs": {"a": {
+        "id": "a", "status": "new", "url": "https://boards.greenhouse.io/acme/jobs/1",
+        "last_verified_at": stale,
+    }}}
+    job_store.reverify_stale_jobs(store, now, verify_open=lambda url: False)
+    assert store["jobs"]["a"]["status"] == "closed"
+
+
+def test_reverify_stale_jobs_skips_recently_verified():
+    now = datetime.now(timezone.utc)
+    recent = (now - timedelta(hours=2)).isoformat()
+    store = {"jobs": {"a": {
+        "id": "a", "status": "new", "url": "https://boards.greenhouse.io/acme/jobs/1",
+        "last_verified_at": recent,
+    }}}
+    calls = []
+    job_store.reverify_stale_jobs(store, now, verify_open=lambda url: calls.append(url) or True)
+    assert calls == []
+    assert store["jobs"]["a"]["status"] == "new"
+
+
+def test_reverify_stale_jobs_skips_applied_and_dismissed():
+    now = datetime.now(timezone.utc)
+    store = {"jobs": {
+        "a": {"id": "a", "status": "applied", "url": "https://x.com/1", "last_verified_at": ""},
+        "b": {"id": "b", "status": "dismissed", "url": "https://x.com/2", "last_verified_at": ""},
+    }}
+    calls = []
+    job_store.reverify_stale_jobs(store, now, verify_open=lambda url: calls.append(url) or True)
+    assert calls == []
+
+
+def test_build_feedback_summary_empty_store_returns_empty_string():
+    store = {"jobs": {}}
+    assert job_store.build_feedback_summary(store) == ""
+
+
+def test_build_feedback_summary_includes_applied_and_dismissed():
+    store = {"jobs": {
+        "a": {"title": "Data Engineer", "company": "Acme", "status": "applied", "last_seen_at": "2026-07-01T00:00:00"},
+        "b": {"title": "QA Engineer", "company": "Beta", "status": "dismissed", "last_seen_at": "2026-07-02T00:00:00"},
+    }}
+    summary = job_store.build_feedback_summary(store)
+    assert "Applied to" in summary
+    assert "Data Engineer @ Acme" in summary
+    assert "Dismissed" in summary
+    assert "QA Engineer @ Beta" in summary
+
+
+def test_build_feedback_summary_caps_at_n_most_recent():
+    jobs = {}
+    for i in range(15):
+        jobs[str(i)] = {
+            "title": f"Role {i}", "company": "Acme", "status": "dismissed",
+            "last_seen_at": f"2026-07-{i+1:02d}T00:00:00",
+        }
+    store = {"jobs": jobs}
+    summary = job_store.build_feedback_summary(store, n=10)
+    assert "Role 14" in summary
+    assert "Role 0" not in summary
