@@ -154,6 +154,36 @@ boundary (Tavily + Anthropic API calls):
 - **Routes**: monkeypatch `job_search_agent.run` so route tests exercise the
   background-task wiring, 409-on-concurrent-search, and the apply/dismiss status
   transitions against a real temp-directory profile store — without hitting real APIs.
+- **Feedback summary**: unit test `build_profile_summary()`'s new section against a
+  fixture store — asserts applied/dismissed entries appear, oldest-beyond-N are dropped,
+  and an empty store (no history yet) omits the section entirely rather than printing
+  "Recent signal: none".
+
+### 6. Feedback loop — bias future search on applied/dismissed history
+
+Prompted by looking at how Jack & Jill (a two-sided AI recruiting product) improves its
+matching: candidates give it a yes/no on each suggestion, and that revealed preference
+shapes what it surfaces next. Most of that product doesn't transfer — its ATS
+integration is on the *employer* side (official platform access to pull requisitions
+from Greenhouse/Lever/Workday/SuccessFactors), not something a search-based personal
+tool can replicate, and there's no published detail on its actual matching algorithm
+beyond marketing language. The one transferable idea is the feedback loop itself, which
+needs no new infrastructure given the persistent store already in this design (section 2)
+already records `applied`/`dismissed` status per job.
+
+Change to `build_profile_summary()`: before building the prompt, read the profile's job
+store and pull the most recent N (suggest N=10) `applied` and N `dismissed` records.
+Append a short section to the prompt:
+
+```
+Recent signal from past search runs:
+Applied to (positive signal — find more like these): <title @ company>, ...
+Dismissed (negative signal — avoid these patterns): <title @ company — reason if known>, ...
+```
+
+This is a heuristic prompt addition, not a trained model — it rides on Claude's existing
+scoring judgement rather than adding a ranking layer. Cap at N=10 each so the prompt
+doesn't grow unbounded over time; drop the oldest once a status list exceeds that.
 
 ## Open questions / risks
 
@@ -162,3 +192,8 @@ boundary (Tavily + Anthropic API calls):
   "try it and see" risk inherent to the search-based (not direct-API) approach chosen for
   v1; the fallback if it's too sparse is calling the Greenhouse/Lever public JSON APIs
   directly against a curated company list (explicitly out of scope for now).
+- The feedback loop (section 6) is unvalidated — it's plausible that a handful of
+  dismissed examples usefully steers the model away from a pattern, but this could also
+  have no measurable effect, or overcorrect (e.g. one dismissed role tanking an entire
+  adjacent category). Worth a manual before/after comparison once built rather than
+  assuming it works as intended.
