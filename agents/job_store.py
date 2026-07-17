@@ -49,12 +49,12 @@ def make_job_id(url: str) -> str:
 
 def derive_source(url: str) -> str:
     host = urlparse(url).netloc.lower()
-    if "greenhouse.io" in host:
-        return "greenhouse"
-    if "lever.co" in host:
-        return "lever"
-    if "workatastartup.com" in host:
-        return "yc"
-    if "linkedin.com" in host:
-        return "linkedin"
+    for domain, source in (
+        ("greenhouse.io", "greenhouse"),
+        ("lever.co", "lever"),
+        ("workatastartup.com", "yc"),
+        ("linkedin.com", "linkedin"),
+    ):
+        if host == domain or host.endswith("." + domain):
+            return source
     return "other"

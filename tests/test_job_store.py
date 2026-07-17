@@ -116,3 +116,8 @@ def test_derive_source_linkedin():
 
 def test_derive_source_other():
     assert job_store.derive_source("https://example.com/careers/1") == "other"
+
+
+def test_derive_source_rejects_lookalike_domain():
+    assert job_store.derive_source("https://clever.co/jobs/1") == "other"
+    assert job_store.derive_source("https://linkedin.com.evil.com/phish") == "other"
