@@ -94,7 +94,7 @@ Additional context:
 
 Hard requirements:
 - Posted within the last 5 days. Discard anything older.
-- LinkedIn jobs only."""
+- Jobs from LinkedIn, Greenhouse, Lever, or workatastartup.com only."""
 
     # Fallback: original hardcoded profile
     titles    = [exp.get("title", "") for exp in resume.get("experience", [])[:3]]
@@ -144,13 +144,13 @@ def send_email(jobs: list[dict], candidate_name: str) -> None:
 
     subject = f"[Job Agent] {len(jobs)} new job(s) found for {candidate_name}"
 
-    body_lines = [f"<h2>{len(jobs)} new LinkedIn jobs matched your profile</h2><br>"]
+    body_lines = [f"<h2>{len(jobs)} new jobs matched your profile</h2><br>"]
     for i, job in enumerate(jobs, 1):
         score = job.get("relevance_score", "?")
         body_lines.append(
             f"<b>{i}. [{score}/10] {job['title']}</b> at {job['company']} ({job['location']})<br>"
             f"{job.get('match_reason', '')}<br>"
-            f"<a href='{job.get('url', '')}'>View on LinkedIn</a><br><br>"
+            f"<a href='{job.get('url', '')}'>View listing</a><br><br>"
         )
 
     msg = MIMEMultipart("alternative")
@@ -258,7 +258,7 @@ Return ONLY a JSON array, no other text:
     messages = [
         {
             "role": "user",
-            "content": f"Find relevant LinkedIn jobs for this candidate:\n\n{profile}"
+            "content": f"Find relevant jobs for this candidate:\n\n{profile}"
         }
     ]
 
