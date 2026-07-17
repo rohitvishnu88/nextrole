@@ -39,3 +39,19 @@ def test_needs_reverify_true_after_24h():
     now = datetime.now(timezone.utc)
     last = (now - timedelta(hours=25)).isoformat()
     assert job_freshness.needs_reverify(last, now) is True
+
+
+def test_needs_reverify_handles_naive_stored_timestamp_against_aware_now():
+    now = datetime.now(timezone.utc)
+    naive_last = (now - timedelta(hours=2)).replace(tzinfo=None).isoformat()
+    assert job_freshness.needs_reverify(naive_last, now) is False
+
+
+def test_needs_reverify_exact_24h_boundary_counts_as_due():
+    now = datetime.now(timezone.utc)
+    last = (now - timedelta(hours=24)).isoformat()
+    assert job_freshness.needs_reverify(last, now) is True
+
+
+def test_looks_closed_empty_string_is_false():
+    assert job_freshness.looks_closed("") is False
