@@ -280,3 +280,60 @@ def test_visible_jobs_excludes_dismissed_and_closed_sorted_by_score():
     }}
     visible = job_store.visible_jobs(store)
     assert [j["id"] for j in visible] == ["d", "a"]
+
+
+def test_process_search_results_adds_fresh_jobs():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 1
+
+
+def test_process_search_results_drops_unknown_domain():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://example.com/careers/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 0
+
+
+def test_process_search_results_drops_closed_jobs():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: False)
+    assert len(store["jobs"]) == 0
+
+
+def test_process_search_results_drops_yc_duplicate_of_existing_store_job():
+    existing_id = job_store.make_job_id("https://boards.greenhouse.io/acme/jobs/1")
+    store = {"jobs": {existing_id: {
+        "id": existing_id, "source": "greenhouse", "company": "Acme", "title": "Data Engineer", "status": "seen",
+    }}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "Remote",
+         "url": "https://www.workatastartup.com/jobs/999", "relevance_score": 7, "match_reason": "Also fits"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 1
+
+
+def test_process_search_results_drops_yc_duplicate_within_same_batch():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "London",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+        {"title": "Data Engineer", "company": "Acme", "location": "Remote",
+         "url": "https://www.workatastartup.com/jobs/999", "relevance_score": 7, "match_reason": "Also fits"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 1
+    sources = {j["source"] for j in store["jobs"].values()}
+    assert sources == {"greenhouse"}

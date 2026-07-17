@@ -124,3 +124,21 @@ def mark_new_as_seen(store: dict) -> bool:
 def visible_jobs(store: dict) -> list:
     jobs = [j for j in store.get("jobs", {}).values() if j.get("status") not in ("dismissed", "closed")]
     return sorted(jobs, key=lambda j: j.get("relevance_score", 0), reverse=True)
+
+
+def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_open) -> None:
+    kept = []
+    for raw in raw_jobs:
+        job = dict(raw)
+        job["source"] = derive_source(job.get("url", ""))
+        if job["source"] == "other":
+            continue
+        combined = dict(store.get("jobs", {}))
+        combined.update({f"_pending_{i}": j for i, j in enumerate(kept)})
+        if is_cross_source_duplicate(job, combined):
+            continue
+        if not verify_open(job["url"]):
+            continue
+        kept.append(job)
+    for job in kept:
+        merge_job(store, job, now_iso)
