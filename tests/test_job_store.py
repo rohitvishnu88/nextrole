@@ -121,3 +121,41 @@ def test_derive_source_other():
 def test_derive_source_rejects_lookalike_domain():
     assert job_store.derive_source("https://clever.co/jobs/1") == "other"
     assert job_store.derive_source("https://linkedin.com.evil.com/phish") == "other"
+
+
+def test_normalize_dedup_key_case_and_whitespace_insensitive():
+    key1 = job_store.normalize_dedup_key("Acme Corp", "Senior Data Engineer")
+    key2 = job_store.normalize_dedup_key("  acme corp  ", "senior   data engineer")
+    assert key1 == key2
+
+
+def test_is_cross_source_duplicate_true_when_other_source_matches():
+    candidate = {"source": "yc", "company": "Acme", "title": "Data Engineer"}
+    existing = {
+        "abc": {"source": "greenhouse", "company": "Acme", "title": "Data Engineer"},
+    }
+    assert job_store.is_cross_source_duplicate(candidate, existing) is True
+
+
+def test_is_cross_source_duplicate_false_when_no_match():
+    candidate = {"source": "yc", "company": "Acme", "title": "Data Engineer"}
+    existing = {
+        "abc": {"source": "greenhouse", "company": "Acme", "title": "Product Manager"},
+    }
+    assert job_store.is_cross_source_duplicate(candidate, existing) is False
+
+
+def test_is_cross_source_duplicate_false_when_candidate_not_yc():
+    candidate = {"source": "linkedin", "company": "Acme", "title": "Data Engineer"}
+    existing = {
+        "abc": {"source": "greenhouse", "company": "Acme", "title": "Data Engineer"},
+    }
+    assert job_store.is_cross_source_duplicate(candidate, existing) is False
+
+
+def test_is_cross_source_duplicate_ignores_other_yc_records():
+    candidate = {"source": "yc", "company": "Acme", "title": "Data Engineer"}
+    existing = {
+        "abc": {"source": "yc", "company": "Acme", "title": "Data Engineer"},
+    }
+    assert job_store.is_cross_source_duplicate(candidate, existing) is False

@@ -58,3 +58,21 @@ def derive_source(url: str) -> str:
         if host == domain or host.endswith("." + domain):
             return source
     return "other"
+
+
+def normalize_dedup_key(company: str, title: str) -> str:
+    def norm(s: str) -> str:
+        return re.sub(r"\s+", " ", s.strip().lower())
+    return f"{norm(company)}::{norm(title)}"
+
+
+def is_cross_source_duplicate(candidate: dict, existing_jobs: dict) -> bool:
+    if candidate.get("source") != "yc":
+        return False
+    key = normalize_dedup_key(candidate.get("company", ""), candidate.get("title", ""))
+    for job in existing_jobs.values():
+        if job.get("source") == "yc":
+            continue
+        if normalize_dedup_key(job.get("company", ""), job.get("title", "")) == key:
+            return True
+    return False
