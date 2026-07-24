@@ -23,6 +23,23 @@ def _meta_file() -> Path:
     return _profiles_dir() / "profiles.json"
 
 
+def _normalize_skills(skills) -> dict:
+    """Ensure skills is always {group: [items]}. The resume-parsing model
+    sometimes returns a flat list instead of grouped skills for resumes with
+    no clear technical categories (e.g. non-technical roles) — every
+    downstream consumer (profile page, PDF template, job search prompt)
+    assumes the grouped shape, so this is enforced once at the parse
+    boundary rather than trusted to the model's output."""
+    if isinstance(skills, dict):
+        return {
+            group: (items if isinstance(items, list) else [str(items)])
+            for group, items in skills.items()
+        }
+    if isinstance(skills, list):
+        return {"Skills": [str(s) for s in skills]}
+    return {}
+
+
 def _load_meta() -> List[dict]:
     f = _meta_file()
     if not f.exists():
@@ -170,10 +187,13 @@ async def parse_resume(slug: str, file: UploadFile = File(...)):
     prompt = f"""Extract structured resume data from the text below.
 Return ONLY a valid JSON object matching the resume_data.json schema.
 Do not invent information. Use only what is present in the resume text.
+Capture every entry completely — every role in the experience section, every
+bullet point under each role, every skill, every certification. Do not
+summarise, condense, or drop entries to save space.
 {schema_hint}
 
 RESUME TEXT:
-{text[:6000]}"""
+{text[:20000]}"""
 
     response = client.messages.create(
         model=MODEL,
@@ -182,6 +202,7 @@ RESUME TEXT:
     )
 
     parsed = json.loads(extract_json_object(response.content[0].text))
+    parsed["skills"] = _normalize_skills(parsed.get("skills"))
     _PARSE_CACHE[slug] = parsed
     return parsed
 

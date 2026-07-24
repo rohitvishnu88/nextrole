@@ -24,6 +24,30 @@ def client(profiles_dir):
     return TestClient(app)
 
 
+def test_normalize_skills_passes_through_correct_shape():
+    import a2a.routes.profiles as mod
+    result = mod._normalize_skills({"Cloud": ["AWS", "GCP"]})
+    assert result == {"Cloud": ["AWS", "GCP"]}
+
+
+def test_normalize_skills_wraps_flat_list():
+    import a2a.routes.profiles as mod
+    result = mod._normalize_skills(["Leadership", "Marketing Strategy"])
+    assert result == {"Skills": ["Leadership", "Marketing Strategy"]}
+
+
+def test_normalize_skills_wraps_non_list_group_value():
+    import a2a.routes.profiles as mod
+    result = mod._normalize_skills({"Cloud": "AWS"})
+    assert result == {"Cloud": ["AWS"]}
+
+
+def test_normalize_skills_handles_none_or_missing():
+    import a2a.routes.profiles as mod
+    assert mod._normalize_skills(None) == {}
+    assert mod._normalize_skills("") == {}
+
+
 def test_list_profiles_empty(client):
     resp = client.get("/api/profiles")
     assert resp.status_code == 200
