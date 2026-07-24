@@ -37,6 +37,26 @@ export default function ResumeEditPage() {
   const TITLE_FIELD: Record<string, string> = { experience: "title", education: "degree", certifications: "name" };
   const SECTION_TITLES: Record<string, string> = { experience: "Experience", education: "Education", certifications: "Certifications" };
 
+  // Blank/whitespace-only lines in a string-array field (e.g. an Experience
+  // entry's `description` bullets) are filtered once here, at submit time -
+  // not on every keystroke. Filtering per-keystroke would strip a trailing
+  // blank line the instant the user presses Enter, before they can type the
+  // next line, making multi-line entry impossible.
+  function stripBlankStringArrays(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      if (value.every(v => typeof v === "string")) {
+        return (value as string[]).filter(s => s.trim() !== "");
+      }
+      return value.map(stripBlankStringArrays);
+    }
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, stripBlankStringArrays(v)])
+      );
+    }
+    return value;
+  }
+
   async function handleDraft(section: string, instruction: string) {
     const target = editing;
     if (!target || !slug) return;
@@ -58,7 +78,7 @@ export default function ResumeEditPage() {
         item_index: editing.itemIndex,
         group: editing.group,
         skill: editing.skill,
-        item: drafted,
+        item: stripBlankStringArrays(drafted),
       });
       setApplyError("");
       setEditing(null);
@@ -139,15 +159,32 @@ export default function ResumeEditPage() {
             <div className="mt-3 space-y-3">
               {(drafted as Record<string, unknown>[]).map((draftItem, i) => (
                 <div key={i} className="bg-surface rounded-lg p-3">
-                  <EditableItemForm
-                    value={draftItem}
-                    onChange={next => setDrafted((drafted as Record<string, unknown>[]).map((d, j) => (j === i ? next : d)))}
-                  />
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <EditableItemForm
+                        value={draftItem}
+                        onChange={next => setDrafted((drafted as Record<string, unknown>[]).map((d, j) => (j === i ? next : d)))}
+                      />
+                    </div>
+                    <button
+                      onClick={() => setDrafted((drafted as Record<string, unknown>[]).filter((_, j) => j !== i))}
+                      className="text-gray-400 hover:text-red-500 shrink-0"
+                      title="Remove this drafted item"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <div className="flex gap-2">
                 <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                <button
+                  onClick={() => handleConfirm(section)}
+                  disabled={(drafted as Record<string, unknown>[]).length === 0}
+                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           )
@@ -223,15 +260,32 @@ export default function ResumeEditPage() {
             <div className="mt-3 space-y-3">
               {(drafted as { group: string; skill: string }[]).map((draftItem, i) => (
                 <div key={i} className="bg-surface rounded-lg p-3">
-                  <EditableItemForm
-                    value={draftItem}
-                    onChange={next => setDrafted((drafted as Record<string, unknown>[]).map((d, j) => (j === i ? next : d)))}
-                  />
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <EditableItemForm
+                        value={draftItem}
+                        onChange={next => setDrafted((drafted as Record<string, unknown>[]).map((d, j) => (j === i ? next : d)))}
+                      />
+                    </div>
+                    <button
+                      onClick={() => setDrafted((drafted as { group: string; skill: string }[]).filter((_, j) => j !== i))}
+                      className="text-gray-400 hover:text-red-500 shrink-0"
+                      title="Remove this drafted item"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <div className="flex gap-2">
                 <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                <button onClick={() => handleConfirm("skills")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                <button
+                  onClick={() => handleConfirm("skills")}
+                  disabled={(drafted as { group: string; skill: string }[]).length === 0}
+                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           )
@@ -266,7 +320,7 @@ export default function ResumeEditPage() {
         action: "edit",
         group: editing.group,
         skill: editing.skill,
-        item: drafted,
+        item: stripBlankStringArrays(drafted),
       });
       setApplyError("");
       setEditing(null);
@@ -286,12 +340,37 @@ export default function ResumeEditPage() {
           {items.map((lang, i) => (
             <span key={lang} className="flex items-center gap-1 bg-surface border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700">
               {lang}
+              <button onClick={() => { setEditing({ section: "languages", action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+                <Pencil size={11} />
+              </button>
               <button onClick={() => handleDelete("languages", i)} className="text-gray-400 hover:text-red-500">
                 <Trash2 size={11} />
               </button>
             </span>
           ))}
         </div>
+
+        {editing?.section === "languages" && editing.action === "edit" && (
+          drafted == null ? (
+            <div className="mb-2">
+              <SectionInstructionBox
+                placeholder="Describe the change..."
+                submitLabel="Draft"
+                onSubmit={instruction => handleDraft("languages", instruction)}
+                onCancel={() => { setEditing(null); setApplyError(""); }}
+              />
+            </div>
+          ) : (
+            <div className="mb-2 space-y-2">
+              <EditableItemForm value={drafted as string} onChange={setDrafted} />
+              <div className="flex gap-2">
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => handleConfirm("languages")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+              </div>
+            </div>
+          )
+        )}
+
         {editing?.section === "languages" && editing.action === "add" ? (
           drafted == null ? (
             <SectionInstructionBox
@@ -302,20 +381,28 @@ export default function ResumeEditPage() {
             />
           ) : (
             <div className="space-y-2">
-              <EditableItemForm value={(drafted as string[]).join("\n")} onChange={v => setDrafted((v as string).split("\n").filter(Boolean))} />
+              <EditableItemForm value={(drafted as string[]).join("\n")} onChange={v => setDrafted((v as string).split("\n"))} />
               <div className="flex gap-2">
                 <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                <button onClick={() => handleConfirm("languages")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                <button
+                  onClick={() => handleConfirm("languages")}
+                  disabled={(drafted as string[]).filter(s => s.trim() !== "").length === 0}
+                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           )
         ) : (
-          <button
-            onClick={() => { setEditing({ section: "languages", action: "add" }); setDrafted(null); setApplyError(""); }}
-            className="flex items-center gap-1 text-xs text-accent hover:underline"
-          >
-            <Plus size={13} /> Add new
-          </button>
+          !(editing?.section === "languages" && editing.action === "edit") && (
+            <button
+              onClick={() => { setEditing({ section: "languages", action: "add" }); setDrafted(null); setApplyError(""); }}
+              className="flex items-center gap-1 text-xs text-accent hover:underline"
+            >
+              <Plus size={13} /> Add new
+            </button>
+          )
         )}
       </section>
     );
@@ -324,7 +411,7 @@ export default function ResumeEditPage() {
   async function handleScalarConfirm(section: string) {
     if (!slug || drafted == null) return;
     try {
-      await api.applyResumeSection(slug, section, { action: "edit", item: drafted });
+      await api.applyResumeSection(slug, section, { action: "edit", item: stripBlankStringArrays(drafted) });
       setApplyError("");
       setEditing(null);
       setDrafted(null);
