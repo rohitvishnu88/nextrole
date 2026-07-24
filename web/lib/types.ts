@@ -107,3 +107,36 @@ export interface JobSearchResult {
   jobs?: JobMatch[];
   error?: string | null;
 }
+
+export interface ResumeVersionSummary {
+  id: string;
+  timestamp: string;
+  change_summary: string;
+}
+
+export interface ResumeVersion extends ResumeVersionSummary {
+  data: Record<string, unknown>;
+}
+
+export type SectionKind = "list_object" | "flat_list" | "grouped_list" | "scalar";
+
+export interface SectionDraftRequest {
+  action: "add" | "edit";
+  item_index?: number;
+  group?: string;
+  skill?: string;
+  instruction: string;
+}
+
+export interface SectionDraftResponse {
+  items?: unknown[];
+  item?: unknown;
+}
+
+export interface SectionApplyRequest {
+  action: "add" | "edit" | "delete";
+  item_index?: number;
+  group?: string;
+  skill?: string;
+  item?: unknown;
+}

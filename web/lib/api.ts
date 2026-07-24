@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest } from "./types";
 
 const BASE = "/api";
 
@@ -42,6 +42,29 @@ export const confirmResume = (slug: string) =>
 
 export const getResume = (slug: string) =>
   req<Record<string, unknown>>(`/profiles/${slug}/resume`);
+
+export const getResumeHistory = (slug: string) =>
+  req<ResumeVersionSummary[]>(`/profiles/${slug}/resume/history`);
+
+export const getResumeVersion = (slug: string, versionId: string) =>
+  req<ResumeVersion>(`/profiles/${slug}/resume/history/${versionId}`);
+
+export const restoreResumeVersion = (slug: string, versionId: string) =>
+  req<{ restored: boolean; version_id: string }>(`/profiles/${slug}/resume/history/${versionId}/restore`, {
+    method: "POST",
+  });
+
+export const draftResumeSection = (slug: string, section: string, body: SectionDraftRequest) =>
+  req<SectionDraftResponse>(`/profiles/${slug}/resume/sections/${section}/draft`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const applyResumeSection = (slug: string, section: string, body: SectionApplyRequest) =>
+  req<{ saved: boolean; change_summary: string }>(`/profiles/${slug}/resume/sections/${section}/apply`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 // Applications
 export const listApplications = (profile: string) =>
