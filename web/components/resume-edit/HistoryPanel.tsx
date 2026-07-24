@@ -95,6 +95,11 @@ export function HistoryPanel({ slug, onRestored }: Props) {
                 Restore this version
               </button>
             </div>
+            {error && (
+              <div className="mb-3 rounded-lg bg-red-50 border border-red-200 p-3">
+                <p className="text-xs text-red-700">{error}</p>
+              </div>
+            )}
             <pre className="bg-gray-950 text-green-400 text-xs rounded-lg p-4 overflow-x-auto leading-relaxed">
               {JSON.stringify(viewing.data, null, 2)}
             </pre>
