@@ -58,3 +58,21 @@ def test_extract_json_array_with_fence_trailing_space():
     text = '```  \n[{"title": "Engineer"}]\n```'
     result = extract_json_array(text)
     assert result == '[{"title": "Engineer"}]'
+
+
+def test_extract_json_array_ignores_trailing_text_with_bracket():
+    text = '[{"title": "Engineer"}]\n\nNote: see the listing [above] for details.'
+    result = extract_json_array(text)
+    assert result == '[{"title": "Engineer"}]'
+
+
+def test_extract_json_object_ignores_trailing_text_with_brace():
+    text = '{"name": "Alice"}\n\nNote: formatted as {JSON} above.'
+    result = extract_json_object(text)
+    assert result == '{"name": "Alice"}'
+
+
+def test_extract_json_array_nested_arrays_still_parses_fully():
+    text = '[{"tags": ["a", "b"]}, {"tags": ["c"]}]'
+    result = extract_json_array(text)
+    assert result == '[{"tags": ["a", "b"]}, {"tags": ["c"]}]'

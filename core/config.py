@@ -20,6 +20,9 @@ Writing rules — apply to every sentence:
 """
 
 
+import json as _json
+
+
 def _strip_fences(text: str) -> str:
     text = text.strip()
     lines = text.splitlines()
@@ -30,21 +33,30 @@ def _strip_fences(text: str) -> str:
     return "\n".join(lines).strip()
 
 
-def extract_json_object(text: str) -> str:
-    """Return the outermost {...} span from text (first { to last }), stripping markdown fences. Returns text unchanged if no braces found."""
-    text = _strip_fences(text)
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start != -1 and end > start:
+def _extract_json_span(text: str, open_char: str, close_char: str) -> str:
+    """Return the first complete JSON value starting at open_char, ignoring any
+    trailing content after it (e.g. commentary that itself contains a stray
+    close_char, which would otherwise fool a naive first-to-last-bracket scan).
+    Falls back to a first-to-last-bracket span if the text isn't parseable
+    JSON at that position."""
+    start = text.find(open_char)
+    if start == -1:
+        return text
+    try:
+        _, end = _json.JSONDecoder().raw_decode(text, start)
         return text[start:end]
-    return text
+    except _json.JSONDecodeError:
+        end = text.rfind(close_char) + 1
+        return text[start:end] if end > start else text
+
+
+def extract_json_object(text: str) -> str:
+    """Return the outermost {...} span from text (first complete JSON object found), stripping markdown fences. Returns text unchanged if no braces found."""
+    text = _strip_fences(text)
+    return _extract_json_span(text, "{", "}")
 
 
 def extract_json_array(text: str) -> str:
-    """Return the outermost [...] span from text (first [ to last ]), stripping markdown fences. Returns text unchanged if no brackets found."""
+    """Return the outermost [...] span from text (first complete JSON array found), stripping markdown fences. Returns text unchanged if no brackets found."""
     text = _strip_fences(text)
-    start = text.find("[")
-    end = text.rfind("]") + 1
-    if start != -1 and end > start:
-        return text[start:end]
-    return text
+    return _extract_json_span(text, "[", "]")
