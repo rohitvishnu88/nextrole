@@ -9,6 +9,8 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from a2a import resume_history
+
 router = APIRouter(prefix="/api/profiles", tags=["profiles"])
 
 _PARSE_CACHE: Dict[str, dict] = {}
@@ -212,9 +214,6 @@ def confirm_resume(slug: str):
     if slug not in _PARSE_CACHE:
         raise HTTPException(status_code=404, detail="No pending parse result for this profile. Run /parse first.")
     parsed = _PARSE_CACHE.pop(slug)
-    profile_dir = _profiles_dir() / slug
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    (profile_dir / "resume_data.json").write_text(
-        json.dumps(parsed, indent=2), encoding="utf-8"
-    )
+    resume_history.push_version(slug, "Replaced via file upload")
+    resume_history.save_current(slug, parsed)
     return {"saved": True, "profile": slug}

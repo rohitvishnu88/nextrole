@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import json
 import pytest
 from fastapi.testclient import TestClient
 
@@ -73,3 +74,49 @@ def test_delete_profile(client):
     resp = client.delete("/api/profiles/temp")
     assert resp.status_code == 200
     assert client.get("/api/profiles").json() == []
+
+
+def test_confirm_resume_pushes_history_before_overwriting(client, profiles_dir):
+    import io
+    from unittest.mock import patch
+
+    slug = "rohit"
+    client.post("/api/profiles", json={"name": "Rohit", "slug": slug})
+    (profiles_dir / slug / "resume_data.json").write_text(
+        json.dumps({"name": "Old Resume"}), encoding="utf-8"
+    )
+
+    class _FakeContent:
+        text = '{"name": "New Resume"}'
+
+    class _FakeResponse:
+        content = [_FakeContent()]
+
+    class _FakeMessages:
+        def create(self, **kwargs):
+            return _FakeResponse()
+
+    class _FakeClient:
+        def __init__(self):
+            self.messages = _FakeMessages()
+
+    with patch("anthropic.Anthropic", lambda: _FakeClient()), \
+         patch("pdfplumber.open") as mock_pdf:
+        mock_page = type("P", (), {"extract_text": lambda self: "resume text"})()
+        mock_pdf.return_value.__enter__.return_value.pages = [mock_page]
+        resp = client.post(
+            f"/api/profiles/{slug}/resume/parse",
+            files={"file": ("resume.pdf", io.BytesIO(b"%PDF-1.4"), "application/pdf")},
+        )
+    assert resp.status_code == 200
+
+    resp = client.post(f"/api/profiles/{slug}/resume/confirm")
+    assert resp.status_code == 200
+
+    resume = json.loads((profiles_dir / slug / "resume_data.json").read_text())
+    assert resume == {"name": "New Resume", "skills": {}}
+
+    history = json.loads((profiles_dir / slug / "resume_history.json").read_text())
+    assert len(history["versions"]) == 1
+    assert history["versions"][0]["change_summary"] == "Replaced via file upload"
+    assert history["versions"][0]["data"] == {"name": "Old Resume"}
