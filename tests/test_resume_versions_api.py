@@ -408,3 +408,58 @@ def test_draft_malformed_ai_response_returns_500(client, monkeypatch):
         json={"action": "edit", "instruction": "Make it punchier"},
     )
     assert resp.status_code == 500
+
+
+def test_draft_add_wrong_shape_missing_items_key_500(client, monkeypatch):
+    """Verify draft add action rejects AI response missing 'items' key."""
+    _mock_anthropic(monkeypatch, '{"item": {"title": "New Role", "company": "NewCo"}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "add", "instruction": "I joined NewCo as a new role"},
+    )
+    assert resp.status_code == 500
+    assert "expected 'items' list" in resp.json()["detail"].lower()
+
+
+def test_draft_add_wrong_shape_items_not_list_500(client, monkeypatch):
+    """Verify draft add action rejects AI response with 'items' as non-list."""
+    _mock_anthropic(monkeypatch, '{"items": "not a list"}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "add", "instruction": "I joined NewCo"},
+    )
+    assert resp.status_code == 500
+    assert "expected 'items' list" in resp.json()["detail"].lower()
+
+
+def test_draft_edit_wrong_shape_missing_item_key_500(client, monkeypatch):
+    """Verify draft edit action rejects AI response missing 'item' key."""
+    _mock_anthropic(monkeypatch, '{"items": [{"title": "Senior Data Engineer"}]}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "edit", "item_index": 0, "instruction": "Add Senior to title"},
+    )
+    assert resp.status_code == 500
+    assert "expected 'item'" in resp.json()["detail"].lower()
+
+
+def test_draft_edit_grouped_list_nonexistent_group_400(client, monkeypatch):
+    """Verify draft edit action rejects non-existent group."""
+    _mock_anthropic(monkeypatch, '{"item": {"group": "Nonexistent", "skill": "X"}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/draft",
+        json={"action": "edit", "group": "Nonexistent", "skill": "X", "instruction": "Change it"},
+    )
+    assert resp.status_code == 400
+    assert "skill not found in group" in resp.json()["detail"]
+
+
+def test_draft_edit_grouped_list_nonexistent_skill_in_group_400(client, monkeypatch):
+    """Verify draft edit action rejects non-existent skill within existing group."""
+    _mock_anthropic(monkeypatch, '{"item": {"group": "Cloud", "skill": "Nonexistent"}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/draft",
+        json={"action": "edit", "group": "Cloud", "skill": "Nonexistent", "instruction": "Change it"},
+    )
+    assert resp.status_code == 400
+    assert "skill not found in group" in resp.json()["detail"]

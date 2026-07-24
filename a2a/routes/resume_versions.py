@@ -231,6 +231,8 @@ def _draft_prompt_grouped_list(resume: dict, section: str, body: SectionDraft) -
     if body.action == "edit":
         if body.group is None or body.skill is None:
             raise HTTPException(status_code=400, detail="group and skill are required")
+        if body.group not in skills or body.skill not in skills[body.group]:
+            raise HTTPException(status_code=400, detail="skill not found in group")
         return f"""You are editing one skill in a resume's Skills section.
 
 Current skill: "{body.skill}" in group "{body.group}"
@@ -331,6 +333,16 @@ def draft_section(slug: str, section: str, body: SectionDraft):
         messages=[{"role": "user", "content": prompt}],
     )
     try:
-        return _json.loads(extract_json_object(response.content[0].text))
+        parsed = _json.loads(extract_json_object(response.content[0].text))
     except _json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Could not parse the AI's draft. Try rephrasing the instruction.")
+
+    # Validate shape matches the action
+    if body.action == "add":
+        if "items" not in parsed or not isinstance(parsed["items"], list):
+            raise HTTPException(status_code=500, detail="AI response did not match the expected shape (expected 'items' list). Try rephrasing the instruction.")
+    elif body.action == "edit":
+        if "item" not in parsed:
+            raise HTTPException(status_code=500, detail="AI response did not match the expected shape (expected 'item'). Try rephrasing the instruction.")
+
+    return parsed
