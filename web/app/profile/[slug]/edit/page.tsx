@@ -7,6 +7,7 @@ import { ArrowLeft, Upload, Pencil, Trash2, Plus } from "lucide-react";
 import { ReplaceResumeModal } from "@/components/ReplaceResumeModal";
 import { SectionInstructionBox } from "@/components/resume-edit/SectionInstructionBox";
 import { EditableItemForm } from "@/components/resume-edit/EditableItemForm";
+import { HistoryPanel } from "@/components/resume-edit/HistoryPanel";
 
 interface ResumeData {
   name?: string;
@@ -425,6 +426,8 @@ export default function ResumeEditPage() {
           {renderScalarField("website", "Website")}
         </div>
       </section>
+
+      {slug && <HistoryPanel slug={slug} onRestored={loadResume} />}
 
       {showReplace && slug && (
         <ReplaceResumeModal
