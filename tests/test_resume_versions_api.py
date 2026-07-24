@@ -465,6 +465,38 @@ def test_draft_edit_grouped_list_nonexistent_skill_in_group_400(client, monkeypa
     assert "skill not found in group" in resp.json()["detail"]
 
 
+def test_list_history_rejects_path_traversal_slug(client):
+    resp = client.get("/api/profiles/%2E%2E/resume/history")
+    assert resp.status_code == 400
+
+
+def test_get_history_version_rejects_path_traversal_slug(client):
+    resp = client.get("/api/profiles/%2E%2E/resume/history/some-id")
+    assert resp.status_code == 400
+
+
+def test_restore_history_version_rejects_path_traversal_slug(client):
+    resp = client.post("/api/profiles/%2E%2E/resume/history/some-id/restore")
+    assert resp.status_code == 400
+
+
+def test_apply_section_rejects_path_traversal_slug(client):
+    resp = client.post(
+        "/api/profiles/%2E%2E/resume/sections/summary/apply",
+        json={"action": "edit", "item": "X"},
+    )
+    assert resp.status_code == 400
+
+
+def test_draft_section_rejects_path_traversal_slug(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": "X"}')
+    resp = client.post(
+        "/api/profiles/%2E%2E/resume/sections/summary/draft",
+        json={"action": "edit", "instruction": "X"},
+    )
+    assert resp.status_code == 400
+
+
 def test_resume_versions_router_mounted_on_main_app(profiles_dir):
     from a2a.server import app
     from fastapi.testclient import TestClient

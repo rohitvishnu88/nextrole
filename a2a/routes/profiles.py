@@ -209,8 +209,16 @@ RESUME TEXT:
     return parsed
 
 
+def _require_valid_slug(slug: str) -> None:
+    try:
+        resume_history.validate_slug(slug)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid profile slug")
+
+
 @router.post("/{slug}/resume/confirm")
 def confirm_resume(slug: str):
+    _require_valid_slug(slug)
     if slug not in _PARSE_CACHE:
         raise HTTPException(status_code=404, detail="No pending parse result for this profile. Run /parse first.")
     parsed = _PARSE_CACHE.pop(slug)

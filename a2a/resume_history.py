@@ -1,11 +1,21 @@
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
 MAX_HISTORY_VERSIONS = 20
+
+_SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+
+
+def validate_slug(slug: str) -> None:
+    """Mirrors agents/job_store.py::validate_slug - rejects any slug containing
+    path separators or ".." before it is interpolated into a filesystem path."""
+    if slug and not _SLUG_RE.match(slug):
+        raise ValueError(f"invalid slug: {slug!r}")
 
 
 def _profiles_dir() -> Path:
@@ -14,10 +24,12 @@ def _profiles_dir() -> Path:
 
 
 def _resume_file(slug: str) -> Path:
+    validate_slug(slug)
     return _profiles_dir() / slug / "resume_data.json"
 
 
 def _history_file(slug: str) -> Path:
+    validate_slug(slug)
     return _profiles_dir() / slug / "resume_history.json"
 
 

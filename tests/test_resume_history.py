@@ -83,3 +83,33 @@ def test_restore_version_pushes_current_then_restores(profiles_dir):
 def test_restore_version_unknown_id_returns_none(profiles_dir):
     rh.save_current("test-user", {"name": "Ada"})
     assert rh.restore_version("test-user", "nonexistent") is None
+
+
+def test_resume_file_rejects_path_traversal(profiles_dir):
+    with pytest.raises(ValueError):
+        rh._resume_file("../../../../tmp/evil")
+
+
+def test_resume_file_rejects_slash(profiles_dir):
+    with pytest.raises(ValueError):
+        rh._resume_file("test-user/evil")
+
+
+def test_history_file_rejects_path_traversal(profiles_dir):
+    with pytest.raises(ValueError):
+        rh._history_file("../../../../tmp/evil")
+
+
+def test_history_file_rejects_slash(profiles_dir):
+    with pytest.raises(ValueError):
+        rh._history_file("test-user/evil")
+
+
+def test_load_current_rejects_path_traversal(profiles_dir):
+    with pytest.raises(ValueError):
+        rh.load_current("..")
+
+
+def test_save_current_rejects_path_traversal(profiles_dir):
+    with pytest.raises(ValueError):
+        rh.save_current("..", {"name": "Evil"})

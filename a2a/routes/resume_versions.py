@@ -15,6 +15,13 @@ FLAT_LIST_SECTIONS = ("languages",)
 GROUPED_LIST_SECTIONS = ("skills",)
 SCALAR_SECTIONS = ("name", "designation", "work_right", "email", "phone", "website", "summary")
 
+
+def _require_valid_slug(slug: str) -> None:
+    try:
+        resume_history.validate_slug(slug)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid profile slug")
+
 TITLE_FIELD = {"experience": "title", "education": "degree", "certifications": "name"}
 
 SECTION_LABELS = {
@@ -276,6 +283,7 @@ DRAFT_PROMPT_BUILDERS = {
 
 @router.get("/{slug}/resume/history")
 def list_history(slug: str):
+    _require_valid_slug(slug)
     versions = resume_history.load_history(slug)
     return [
         {"id": v["id"], "timestamp": v["timestamp"], "change_summary": v["change_summary"]}
@@ -285,6 +293,7 @@ def list_history(slug: str):
 
 @router.get("/{slug}/resume/history/{version_id}")
 def get_history_version(slug: str, version_id: str):
+    _require_valid_slug(slug)
     version = resume_history.get_version(slug, version_id)
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
@@ -293,6 +302,7 @@ def get_history_version(slug: str, version_id: str):
 
 @router.post("/{slug}/resume/history/{version_id}/restore")
 def restore_history_version(slug: str, version_id: str):
+    _require_valid_slug(slug)
     restored = resume_history.restore_version(slug, version_id)
     if restored is None:
         raise HTTPException(status_code=404, detail="Version not found")
@@ -301,6 +311,7 @@ def restore_history_version(slug: str, version_id: str):
 
 @router.post("/{slug}/resume/sections/{section}/apply")
 def apply_section(slug: str, section: str, body: SectionApply):
+    _require_valid_slug(slug)
     kind = _section_kind(section)
     resume = resume_history.load_current(slug)
     if resume is None:
@@ -315,6 +326,7 @@ def apply_section(slug: str, section: str, body: SectionApply):
 
 @router.post("/{slug}/resume/sections/{section}/draft")
 def draft_section(slug: str, section: str, body: SectionDraft):
+    _require_valid_slug(slug)
     import anthropic
     sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
     from config import MODEL, extract_json_object

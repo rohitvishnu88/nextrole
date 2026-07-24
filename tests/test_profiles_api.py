@@ -120,3 +120,8 @@ def test_confirm_resume_pushes_history_before_overwriting(client, profiles_dir):
     assert len(history["versions"]) == 1
     assert history["versions"][0]["change_summary"] == "Replaced via file upload"
     assert history["versions"][0]["data"] == {"name": "Old Resume"}
+
+
+def test_confirm_resume_rejects_path_traversal_slug(client):
+    resp = client.post("/api/profiles/%2E%2E/resume/confirm")
+    assert resp.status_code == 400
