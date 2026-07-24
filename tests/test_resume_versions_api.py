@@ -463,3 +463,12 @@ def test_draft_edit_grouped_list_nonexistent_skill_in_group_400(client, monkeypa
     )
     assert resp.status_code == 400
     assert "skill not found in group" in resp.json()["detail"]
+
+
+def test_resume_versions_router_mounted_on_main_app(profiles_dir):
+    from a2a.server import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+    resp = client.get("/api/profiles/nonexistent-profile/resume/history")
+    assert resp.status_code == 200
+    assert resp.json() == []
