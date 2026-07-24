@@ -28,6 +28,7 @@ export default function ResumeEditPage() {
   const { slug } = useParams<{ slug: string }>();
   const [resume, setResume] = useState<ResumeData | null>(null);
   const [error, setError] = useState("");
+  const [applyError, setApplyError] = useState("");
   const [showReplace, setShowReplace] = useState(false);
   const [editing, setEditing] = useState<{ section: string; action: "add" | "edit"; itemIndex?: number; group?: string; skill?: string } | null>(null);
   const [drafted, setDrafted] = useState<unknown[] | unknown | null>(null);
@@ -50,23 +51,33 @@ export default function ResumeEditPage() {
 
   async function handleConfirm(section: string) {
     if (!editing || !slug || drafted == null) return;
-    await api.applyResumeSection(slug, section, {
-      action: editing.action,
-      item_index: editing.itemIndex,
-      group: editing.group,
-      skill: editing.skill,
-      item: drafted,
-    });
-    setEditing(null);
-    setDrafted(null);
-    loadResume();
+    try {
+      await api.applyResumeSection(slug, section, {
+        action: editing.action,
+        item_index: editing.itemIndex,
+        group: editing.group,
+        skill: editing.skill,
+        item: drafted,
+      });
+      setApplyError("");
+      setEditing(null);
+      setDrafted(null);
+      loadResume();
+    } catch (err) {
+      setApplyError(err instanceof Error ? err.message : "Failed to save changes");
+    }
   }
 
   async function handleDelete(section: string, itemIndex: number) {
     if (!slug) return;
     if (!confirm("Delete this entry?")) return;
-    await api.applyResumeSection(slug, section, { action: "delete", item_index: itemIndex });
-    loadResume();
+    try {
+      await api.applyResumeSection(slug, section, { action: "delete", item_index: itemIndex });
+      setApplyError("");
+      loadResume();
+    } catch (err) {
+      setApplyError(err instanceof Error ? err.message : "Failed to delete entry");
+    }
   }
 
   function renderListObjectSection(section: "experience" | "education" | "certifications") {
@@ -81,7 +92,7 @@ export default function ResumeEditPage() {
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-gray-800">{String(item[titleField] ?? "")}</p>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => { setEditing({ section, action: "edit", itemIndex: i }); setDrafted(null); }} className="text-gray-400 hover:text-gray-700">
+                  <button onClick={() => { setEditing({ section, action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
                     <Pencil size={14} />
                   </button>
                   <button onClick={() => handleDelete(section, i)} className="text-gray-400 hover:text-red-500">
@@ -96,14 +107,15 @@ export default function ResumeEditPage() {
                       placeholder="Describe the change..."
                       submitLabel="Draft"
                       onSubmit={instruction => handleDraft(section, instruction)}
-                      onCancel={() => setEditing(null)}
+                      onCancel={() => { setEditing(null); setApplyError(""); }}
                     />
                   </div>
                 ) : (
                   <div className="mt-2 space-y-2">
                     <EditableItemForm value={drafted as Record<string, unknown>} onChange={setDrafted} />
+                    {applyError && <p className="text-xs text-red-500">{applyError}</p>}
                     <div className="flex gap-2">
-                      <button onClick={() => { setEditing(null); setDrafted(null); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
                       <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
                     </div>
                   </div>
@@ -120,7 +132,7 @@ export default function ResumeEditPage() {
                 placeholder={`Describe the new ${SECTION_TITLES[section].toLowerCase()} entry...`}
                 submitLabel="Draft"
                 onSubmit={instruction => handleDraft(section, instruction)}
-                onCancel={() => setEditing(null)}
+                onCancel={() => { setEditing(null); setApplyError(""); }}
               />
             </div>
           ) : (
@@ -133,15 +145,16 @@ export default function ResumeEditPage() {
                   />
                 </div>
               ))}
+              {applyError && <p className="text-xs text-red-500">{applyError}</p>}
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
                 <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
               </div>
             </div>
           )
         ) : (
           <button
-            onClick={() => { setEditing({ section, action: "add" }); setDrafted(null); }}
+            onClick={() => { setEditing({ section, action: "add" }); setDrafted(null); setApplyError(""); }}
             className="mt-3 flex items-center gap-1 text-xs text-accent hover:underline"
           >
             <Plus size={13} /> Add new
