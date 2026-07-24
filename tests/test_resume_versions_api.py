@@ -77,3 +77,137 @@ def test_history_list_and_restore_round_trip(client, profiles_dir):
 
     current = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
     assert current["name"] == "Test User"
+
+
+def test_apply_add_list_object_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/apply",
+        json={"action": "add", "item": [{"title": "New Role", "company": "NewCo", "description": ["Did stuff"]}]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["change_summary"] == "Added Experience: New Role"
+
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert len(resume["experience"]) == 2
+    assert resume["experience"][1]["title"] == "New Role"
+
+    history = json.loads((profiles_dir / "test-user" / "resume_history.json").read_text())
+    assert len(history["versions"]) == 1
+    assert len(history["versions"][0]["data"]["experience"]) == 1
+
+
+def test_apply_edit_list_object_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/apply",
+        json={"action": "edit", "item_index": 0, "item": {"title": "Updated Title", "company": "Acme", "description": ["Changed"]}},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["experience"][0]["title"] == "Updated Title"
+
+
+def test_apply_edit_list_object_out_of_range_index(client):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/apply",
+        json={"action": "edit", "item_index": 9, "item": {"title": "X"}},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_delete_list_object_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/certifications/apply",
+        json={"action": "delete", "item_index": 0},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["certifications"] == []
+
+
+def test_apply_add_flat_list_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/languages/apply",
+        json={"action": "add", "item": ["French", "German"]},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["languages"] == ["English", "French", "German"]
+
+
+def test_apply_delete_flat_list_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/languages/apply",
+        json={"action": "delete", "item_index": 0},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["languages"] == []
+
+
+def test_apply_add_grouped_list_new_group(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "add", "item": [{"group": "Programming", "skill": "Python"}]},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["skills"]["Programming"] == ["Python"]
+    assert resume["skills"]["Cloud"] == ["AWS", "GCP"]
+
+
+def test_apply_edit_grouped_list_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"group": "Cloud", "skill": "Azure"}},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["skills"]["Cloud"] == ["AWS", "Azure"]
+
+
+def test_apply_delete_grouped_list_removes_empty_group(client, profiles_dir):
+    client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "delete", "group": "Cloud", "skill": "AWS"},
+    )
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "delete", "group": "Cloud", "skill": "GCP"},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert "Cloud" not in resume["skills"]
+
+
+def test_apply_delete_grouped_list_unknown_skill_400(client):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "delete", "group": "Cloud", "skill": "Nonexistent"},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_edit_scalar_section(client, profiles_dir):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/summary/apply",
+        json={"action": "edit", "item": "A new summary."},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["summary"] == "A new summary."
+
+
+def test_apply_scalar_rejects_add_action(client):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/summary/apply",
+        json={"action": "add", "item": "X"},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_unknown_section_400(client):
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/nonexistent/apply",
+        json={"action": "edit", "item": "X"},
+    )
+    assert resp.status_code == 400
