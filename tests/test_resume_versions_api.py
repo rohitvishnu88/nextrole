@@ -294,3 +294,117 @@ def test_apply_edit_grouped_list_missing_skill_key(client):
         json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"group": "Programming"}},
     )
     assert resp.status_code == 400
+
+
+class _FakeContent:
+    def __init__(self, text):
+        self.text = text
+
+
+class _FakeResponse:
+    def __init__(self, text):
+        self.content = [_FakeContent(text)]
+
+
+class _FakeMessages:
+    def __init__(self, text):
+        self._text = text
+
+    def create(self, **kwargs):
+        return _FakeResponse(self._text)
+
+
+class _FakeAnthropicClient:
+    def __init__(self, text):
+        self.messages = _FakeMessages(text)
+
+
+def _mock_anthropic(monkeypatch, response_text):
+    monkeypatch.setattr("anthropic.Anthropic", lambda: _FakeAnthropicClient(response_text))
+
+
+def test_draft_add_list_object_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"items": [{"title": "New Role", "company": "NewCo", "description": ["Did stuff"]}]}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "add", "instruction": "I joined NewCo as a new role, did stuff"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["title"] == "New Role"
+
+
+def test_draft_edit_list_object_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": {"title": "Senior Data Engineer", "company": "Acme", "description": ["Built things"]}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "edit", "item_index": 0, "instruction": "Add Senior to the title"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["item"]["title"] == "Senior Data Engineer"
+
+
+def test_draft_edit_out_of_range_index_400(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": {}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/experience/draft",
+        json={"action": "edit", "item_index": 9, "instruction": "X"},
+    )
+    assert resp.status_code == 400
+
+
+def test_draft_add_flat_list_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"items": ["French", "German"]}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/languages/draft",
+        json={"action": "add", "instruction": "I learned French and German"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["items"] == ["French", "German"]
+
+
+def test_draft_add_grouped_list_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"items": [{"group": "Programming", "skill": "Python"}]}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/draft",
+        json={"action": "add", "instruction": "I learned Python"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["items"] == [{"group": "Programming", "skill": "Python"}]
+
+
+def test_draft_edit_grouped_list_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": {"group": "Cloud", "skill": "Azure"}}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/draft",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "instruction": "Replace with Azure"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["item"] == {"group": "Cloud", "skill": "Azure"}
+
+
+def test_draft_edit_scalar_section(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": "A punchier summary."}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/summary/draft",
+        json={"action": "edit", "instruction": "Make it punchier"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["item"] == "A punchier summary."
+
+
+def test_draft_scalar_rejects_add_action(client, monkeypatch):
+    _mock_anthropic(monkeypatch, '{"item": "X"}')
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/summary/draft",
+        json={"action": "add", "instruction": "X"},
+    )
+    assert resp.status_code == 400
+
+
+def test_draft_malformed_ai_response_returns_500(client, monkeypatch):
+    _mock_anthropic(monkeypatch, "not valid json at all")
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/summary/draft",
+        json={"action": "edit", "instruction": "Make it punchier"},
+    )
+    assert resp.status_code == 500
