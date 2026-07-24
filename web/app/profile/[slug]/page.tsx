@@ -1,9 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import * as api from "@/lib/api";
-import { Code2, LayoutList, Copy, Check, Upload } from "lucide-react";
-import { ReplaceResumeModal } from "@/components/ReplaceResumeModal";
+import { Code2, LayoutList, Copy, Check, Pencil } from "lucide-react";
 
 interface Experience {
   title: string;
@@ -35,7 +35,6 @@ export default function ProfilePage() {
   const [view, setView] = useState<"structured" | "json">("structured");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const [showReplace, setShowReplace] = useState(false);
 
   const loadResume = useCallback(() => {
     if (!slug) return;
@@ -65,13 +64,13 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{resume.name ?? slug} — Resume Data</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowReplace(true)}
+          <Link
+            href={`/profile/${slug}/edit`}
             className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
           >
-            <Upload size={13} />
-            Replace Resume
-          </button>
+            <Pencil size={13} />
+            Edit
+          </Link>
           {view === "json" && (
             <button
               onClick={handleCopy}
@@ -184,14 +183,6 @@ export default function ProfilePage() {
       )}
 
       </>}
-
-      {showReplace && slug && (
-        <ReplaceResumeModal
-          slug={slug}
-          onClose={() => setShowReplace(false)}
-          onReplaced={loadResume}
-        />
-      )}
     </div>
   );
 }
