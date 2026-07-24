@@ -211,3 +211,86 @@ def test_apply_unknown_section_400(client):
         json={"action": "edit", "item": "X"},
     )
     assert resp.status_code == 400
+
+
+def test_apply_edit_grouped_list_different_group_skill_moves(client, profiles_dir):
+    """Verify skill can move to a genuinely different group, leaving original group non-empty."""
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"group": "Programming", "skill": "GCP"}},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((profiles_dir / "test-user" / "resume_data.json").read_text())
+    assert resume["skills"]["Cloud"] == ["AWS"]
+    assert resume["skills"]["Programming"] == ["GCP"]
+
+
+def test_apply_edit_grouped_list_different_group_empties_original(profiles_dir, monkeypatch):
+    """Verify skill move deletes original group if it becomes empty."""
+    # Create a profile with a single-skill group to test empty group removal
+    p = profiles_dir / "empty-test-user"
+    p.mkdir(parents=True)
+    (p / "resume_data.json").write_text(json.dumps({
+        "name": "Test User",
+        "summary": "A summary.",
+        "experience": [],
+        "education": [],
+        "certifications": [],
+        "languages": [],
+        "skills": {"Cloud": ["GCP"], "Programming": ["Python"]},
+    }))
+
+    # Reload module to pick up new fixture data
+    import importlib
+    import a2a.routes.resume_versions as mod
+    importlib.reload(mod)
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    app = FastAPI()
+    app.include_router(mod.router)
+    client = TestClient(app)
+
+    resp = client.post(
+        "/api/profiles/empty-test-user/resume/sections/skills/apply",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"group": "Programming", "skill": "GCP"}},
+    )
+    assert resp.status_code == 200
+    resume = json.loads((p / "resume_data.json").read_text())
+    assert "Cloud" not in resume["skills"]
+    assert resume["skills"]["Programming"] == ["Python", "GCP"]
+
+
+def test_apply_add_grouped_list_missing_skill_key(client):
+    """Verify add action validates presence of skill key."""
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "add", "item": [{"group": "Programming"}]},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_add_grouped_list_missing_group_key(client):
+    """Verify add action validates presence of group key."""
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "add", "item": [{"skill": "Python"}]},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_edit_grouped_list_missing_group_key(client):
+    """Verify edit action validates presence of group key in item."""
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"skill": "Java"}},
+    )
+    assert resp.status_code == 400
+
+
+def test_apply_edit_grouped_list_missing_skill_key(client):
+    """Verify edit action validates presence of skill key in item."""
+    resp = client.post(
+        "/api/profiles/test-user/resume/sections/skills/apply",
+        json={"action": "edit", "group": "Cloud", "skill": "GCP", "item": {"group": "Programming"}},
+    )
+    assert resp.status_code == 400

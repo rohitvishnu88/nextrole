@@ -111,6 +111,8 @@ def _apply_grouped_list(resume: dict, section: str, body: SectionApply) -> str:
             raise HTTPException(status_code=400, detail="No items to add")
         groups_touched = []
         for entry in new_items:
+            if not isinstance(entry, dict) or "group" not in entry or "skill" not in entry:
+                raise HTTPException(status_code=400, detail="Each item must be an object with group and skill keys")
             group, skill = entry["group"], entry["skill"]
             skills.setdefault(group, []).append(skill)
             if group not in groups_touched:
@@ -125,6 +127,8 @@ def _apply_grouped_list(resume: dict, section: str, body: SectionApply) -> str:
     if body.action == "edit":
         if not isinstance(body.item, dict):
             raise HTTPException(status_code=400, detail="item must be an object")
+        if "group" not in body.item or "skill" not in body.item:
+            raise HTTPException(status_code=400, detail="item must have group and skill keys")
         new_group, new_skill = body.item["group"], body.item["skill"]
         skills[body.group].remove(body.skill)
         if not skills[body.group]:
