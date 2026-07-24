@@ -162,6 +162,214 @@ export default function ResumeEditPage() {
     );
   }
 
+  function renderSkillsSection() {
+    const skills = resume?.skills ?? {};
+    return (
+      <section key="skills">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Skills</h2>
+        <div className="space-y-2">
+          {Object.entries(skills).map(([group, list]) => (
+            <div key={group} className="bg-surface rounded-lg p-3">
+              <p className="text-xs font-medium text-gray-500 mb-1">{group}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {list.map(skill => (
+                  <span key={skill} className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700">
+                    {skill}
+                    <button onClick={() => { setEditing({ section: "skills", action: "edit", group, skill }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+                      <Pencil size={11} />
+                    </button>
+                    <button onClick={() => handleDeleteSkill(group, skill)} className="text-gray-400 hover:text-red-500">
+                      <Trash2 size={11} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              {editing?.section === "skills" && editing.action === "edit" && editing.group === group && editing.skill && list.includes(editing.skill) && (
+                drafted == null ? (
+                  <div className="mt-2">
+                    <SectionInstructionBox
+                      placeholder="Describe the change..."
+                      submitLabel="Draft"
+                      onSubmit={instruction => handleDraft("skills", instruction)}
+                      onCancel={() => { setEditing(null); setApplyError(""); }}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    <EditableItemForm value={drafted as Record<string, unknown>} onChange={setDrafted} />
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                      <button onClick={() => handleConfirmSkillEdit()} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+
+        {editing?.section === "skills" && editing.action === "add" ? (
+          drafted == null ? (
+            <div className="mt-3">
+              <SectionInstructionBox
+                placeholder="Describe the new skill(s), e.g. 'I learned Kafka and improved my Python'"
+                submitLabel="Draft"
+                onSubmit={instruction => handleDraft("skills", instruction)}
+                onCancel={() => { setEditing(null); setApplyError(""); }}
+              />
+            </div>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {(drafted as { group: string; skill: string }[]).map((draftItem, i) => (
+                <div key={i} className="bg-surface rounded-lg p-3">
+                  <EditableItemForm
+                    value={draftItem}
+                    onChange={next => setDrafted((drafted as Record<string, unknown>[]).map((d, j) => (j === i ? next : d)))}
+                  />
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => handleConfirm("skills")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+              </div>
+            </div>
+          )
+        ) : (
+          <button
+            onClick={() => { setEditing({ section: "skills", action: "add" }); setDrafted(null); setApplyError(""); }}
+            className="mt-3 flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            <Plus size={13} /> Add new
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  async function handleDeleteSkill(group: string, skill: string) {
+    if (!slug) return;
+    if (!confirm(`Delete "${skill}" from ${group}?`)) return;
+    try {
+      await api.applyResumeSection(slug, "skills", { action: "delete", group, skill });
+      setApplyError("");
+      loadResume();
+    } catch (err) {
+      setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
+
+  async function handleConfirmSkillEdit() {
+    if (!editing || !slug || drafted == null) return;
+    try {
+      await api.applyResumeSection(slug, "skills", {
+        action: "edit",
+        group: editing.group,
+        skill: editing.skill,
+        item: drafted,
+      });
+      setApplyError("");
+      setEditing(null);
+      setDrafted(null);
+      loadResume();
+    } catch (err) {
+      setApplyError(`Failed to save: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
+
+  function renderLanguagesSection() {
+    const items = resume?.languages ?? [];
+    return (
+      <section key="languages">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Languages</h2>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {items.map((lang, i) => (
+            <span key={lang} className="flex items-center gap-1 bg-surface border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700">
+              {lang}
+              <button onClick={() => handleDelete("languages", i)} className="text-gray-400 hover:text-red-500">
+                <Trash2 size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {editing?.section === "languages" && editing.action === "add" ? (
+          drafted == null ? (
+            <SectionInstructionBox
+              placeholder="Describe the new language(s), e.g. 'I learned French and German'"
+              submitLabel="Draft"
+              onSubmit={instruction => handleDraft("languages", instruction)}
+              onCancel={() => { setEditing(null); setApplyError(""); }}
+            />
+          ) : (
+            <div className="space-y-2">
+              <EditableItemForm value={(drafted as string[]).join("\n")} onChange={v => setDrafted((v as string).split("\n").filter(Boolean))} />
+              <div className="flex gap-2">
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => handleConfirm("languages")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+              </div>
+            </div>
+          )
+        ) : (
+          <button
+            onClick={() => { setEditing({ section: "languages", action: "add" }); setDrafted(null); setApplyError(""); }}
+            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            <Plus size={13} /> Add new
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  async function handleScalarConfirm(section: string) {
+    if (!slug || drafted == null) return;
+    try {
+      await api.applyResumeSection(slug, section, { action: "edit", item: drafted });
+      setApplyError("");
+      setEditing(null);
+      setDrafted(null);
+      loadResume();
+    } catch (err) {
+      setApplyError(`Failed to save: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
+
+  function renderScalarField(fieldKey: string, label: string) {
+    const value = String(resume?.[fieldKey] ?? "");
+    const isEditingThis = editing?.section === fieldKey;
+    return (
+      <section key={fieldKey}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</h2>
+          {!isEditingThis && (
+            <button onClick={() => { setEditing({ section: fieldKey, action: "edit" }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+              <Pencil size={13} />
+            </button>
+          )}
+        </div>
+        {isEditingThis ? (
+          drafted == null ? (
+            <SectionInstructionBox
+              placeholder={`Describe the change to ${label.toLowerCase()}...`}
+              submitLabel="Draft"
+              onSubmit={instruction => handleDraft(fieldKey, instruction)}
+              onCancel={() => { setEditing(null); setApplyError(""); }}
+            />
+          ) : (
+            <div className="space-y-2">
+              <EditableItemForm value={drafted as string} onChange={setDrafted} />
+              <div className="flex gap-2">
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => handleScalarConfirm(fieldKey)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+              </div>
+            </div>
+          )
+        ) : (
+          <p className="text-sm text-gray-700">{value || <span className="text-gray-400">(empty)</span>}</p>
+        )}
+      </section>
+    );
+  }
+
   const loadResume = useCallback(() => {
     if (!slug) return;
     api.getResume(slug)
@@ -201,9 +409,22 @@ export default function ResumeEditPage() {
         </div>
       )}
 
+      {renderScalarField("summary", "Summary")}
       {renderListObjectSection("experience")}
+      {renderSkillsSection()}
       {renderListObjectSection("education")}
       {renderListObjectSection("certifications")}
+      {renderLanguagesSection()}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact</h2>
+        <div className="space-y-3">
+          {renderScalarField("designation", "Designation")}
+          {renderScalarField("work_right", "Work Right")}
+          {renderScalarField("email", "Email")}
+          {renderScalarField("phone", "Phone")}
+          {renderScalarField("website", "Website")}
+        </div>
+      </section>
 
       {showReplace && slug && (
         <ReplaceResumeModal
