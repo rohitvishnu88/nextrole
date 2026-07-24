@@ -283,6 +283,25 @@ def test_visible_jobs_excludes_dismissed_and_closed_sorted_by_score():
     assert [j["id"] for j in visible] == ["d", "a"]
 
 
+def test_visible_jobs_caps_at_max_by_default():
+    store = {"jobs": {
+        str(i): {"id": str(i), "status": "new", "relevance_score": i}
+        for i in range(40)
+    }}
+    visible = job_store.visible_jobs(store)
+    assert len(visible) == job_store.MAX_VISIBLE_JOBS
+    assert [j["relevance_score"] for j in visible] == list(range(39, 39 - job_store.MAX_VISIBLE_JOBS, -1))
+
+
+def test_visible_jobs_respects_custom_limit():
+    store = {"jobs": {
+        str(i): {"id": str(i), "status": "new", "relevance_score": i}
+        for i in range(10)
+    }}
+    visible = job_store.visible_jobs(store, limit=3)
+    assert [j["id"] for j in visible] == ["9", "8", "7"]
+
+
 def test_process_search_results_adds_fresh_jobs():
     store = {"jobs": {}}
     raw_jobs = [
@@ -362,6 +381,44 @@ def test_process_search_results_skips_job_missing_title():
     ]
     job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
     assert len(store["jobs"]) == 0
+
+
+def test_is_uk_location_true_for_uk_variants():
+    assert job_store.is_uk_location("London, UK") is True
+    assert job_store.is_uk_location("United Kingdom (Remote)") is True
+    assert job_store.is_uk_location("England, United Kingdom") is True
+
+
+def test_is_uk_location_true_for_ambiguous_remote_or_empty():
+    assert job_store.is_uk_location("Remote") is True
+    assert job_store.is_uk_location("") is True
+    assert job_store.is_uk_location(None) is True
+
+
+def test_is_uk_location_false_for_named_non_uk_country():
+    assert job_store.is_uk_location("Remote (United States)") is False
+    assert job_store.is_uk_location("Bangalore, India") is False
+    assert job_store.is_uk_location("Berlin, Germany") is False
+
+
+def test_process_search_results_drops_non_uk_location():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "Bangalore, India",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 0
+
+
+def test_process_search_results_keeps_ambiguous_remote_location():
+    store = {"jobs": {}}
+    raw_jobs = [
+        {"title": "Data Engineer", "company": "Acme", "location": "Remote",
+         "url": "https://boards.greenhouse.io/acme/jobs/1", "relevance_score": 8, "match_reason": "Good fit"},
+    ]
+    job_store.process_search_results(raw_jobs, store, "2026-07-17T00:00:00", verify_open=lambda url: True)
+    assert len(store["jobs"]) == 1
 
 
 def test_process_search_results_skips_verify_for_recently_verified_job():

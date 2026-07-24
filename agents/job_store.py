@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import job_freshness
 
 ROOT = Path(__file__).parent.parent
+MAX_VISIBLE_JOBS = 30
 
 
 def _output_dir() -> Path:
@@ -134,9 +135,26 @@ def mark_new_as_seen(store: dict) -> bool:
     return changed
 
 
-def visible_jobs(store: dict) -> list:
+def visible_jobs(store: dict, limit: int = MAX_VISIBLE_JOBS) -> list:
     jobs = [j for j in store.get("jobs", {}).values() if j.get("status") not in ("dismissed", "closed")]
-    return sorted(jobs, key=lambda j: j.get("relevance_score", 0), reverse=True)
+    jobs = sorted(jobs, key=lambda j: j.get("relevance_score", 0), reverse=True)
+    return jobs[:limit]
+
+
+NON_UK_LOCATION_MARKERS = (
+    "united states", "usa", "u.s.", "india", "canada", "germany", "france",
+    "spain", "netherlands", "poland", "australia", "singapore", "dubai",
+    "uae", "philippines", "pakistan", "nigeria", "brazil", "mexico",
+    "china", "japan", "vietnam", "romania", "ukraine", "portugal", "italy",
+)
+
+
+def is_uk_location(location: str) -> bool:
+    """True unless the location string names a specific non-UK country — an
+    empty string or a bare "Remote" is treated as UK-relevant by default,
+    since the search itself is already UK-targeted."""
+    loc = (location or "").strip().lower()
+    return not any(marker in loc for marker in NON_UK_LOCATION_MARKERS)
 
 
 def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_open) -> None:
@@ -148,6 +166,8 @@ def process_search_results(raw_jobs: list, store: dict, now_iso: str, verify_ope
         if job["source"] == "other":
             continue
         if not all(job.get(k) for k in ("title", "company", "url")):
+            continue
+        if not is_uk_location(job.get("location", "")):
             continue
         tagged.append(job)
 
