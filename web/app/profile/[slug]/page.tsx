@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import * as api from "@/lib/api";
-import { Code2, LayoutList, Copy, Check } from "lucide-react";
+import { Code2, LayoutList, Copy, Check, Upload } from "lucide-react";
+import { ReplaceResumeModal } from "@/components/ReplaceResumeModal";
 
 interface Experience {
   title: string;
@@ -14,11 +15,17 @@ interface Experience {
 
 interface ResumeData {
   name?: string;
+  designation?: string;
+  work_right?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
   summary?: string;
   experience?: Experience[];
   skills?: Record<string, string[]>;
   education?: Array<{ degree?: string; school?: string }>;
   certifications?: Array<{ name?: string; issuer?: string }>;
+  languages?: string[];
 }
 
 export default function ProfilePage() {
@@ -28,16 +35,20 @@ export default function ProfilePage() {
   const [view, setView] = useState<"structured" | "json">("structured");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [showReplace, setShowReplace] = useState(false);
 
-  useEffect(() => {
+  const loadResume = useCallback(() => {
     if (!slug) return;
     api.getResume(slug)
       .then(data => {
         setRaw(data);
         setResume(data as ResumeData);
+        setError("");
       })
       .catch(() => setError("No resume data found for this profile."));
   }, [slug]);
+
+  useEffect(() => { loadResume(); }, [loadResume]);
 
   function handleCopy() {
     if (!raw) return;
@@ -54,6 +65,13 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{resume.name ?? slug} — Resume Data</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowReplace(true)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+          >
+            <Upload size={13} />
+            Replace Resume
+          </button>
           {view === "json" && (
             <button
               onClick={handleCopy}
@@ -90,6 +108,16 @@ export default function ProfilePage() {
 
       {view === "structured" && <>
 
+      {(resume.designation || resume.email || resume.phone || resume.website || resume.work_right) && (
+        <section className="text-sm text-gray-600 space-y-0.5">
+          {resume.designation && <p className="font-medium text-gray-800">{resume.designation}</p>}
+          <p>
+            {[resume.email, resume.phone, resume.website].filter(Boolean).join(" · ")}
+          </p>
+          {resume.work_right && <p>{resume.work_right}</p>}
+        </section>
+      )}
+
       {resume.summary && (
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Summary</h2>
@@ -106,7 +134,7 @@ export default function ProfilePage() {
                 <p className="text-sm font-semibold text-gray-900">{exp.title}</p>
                 <p className="text-xs text-gray-500 mb-2">{exp.company} · {exp.start_date} – {exp.end_date}</p>
                 <ul className="list-disc list-inside space-y-0.5">
-                  {(exp.description ?? []).slice(0, 3).map((b, j) => (
+                  {(exp.description ?? []).map((b, j) => (
                     <li key={j} className="text-xs text-gray-600">{b}</li>
                   ))}
                 </ul>
@@ -122,7 +150,8 @@ export default function ProfilePage() {
           <div className="space-y-1">
             {Object.entries(resume.skills).map(([group, items]) => (
               <p key={group} className="text-sm text-gray-700">
-                <span className="font-medium">{group}:</span> {items.join(", ")}
+                <span className="font-medium">{group}:</span>{" "}
+                {Array.isArray(items) ? items.join(", ") : String(items)}
               </p>
             ))}
           </div>
@@ -147,7 +176,22 @@ export default function ProfilePage() {
         </section>
       )}
 
+      {resume.languages && resume.languages.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Languages</h2>
+          <p className="text-sm text-gray-700">{resume.languages.join(", ")}</p>
+        </section>
+      )}
+
       </>}
+
+      {showReplace && slug && (
+        <ReplaceResumeModal
+          slug={slug}
+          onClose={() => setShowReplace(false)}
+          onReplaced={loadResume}
+        />
+      )}
     </div>
   );
 }
