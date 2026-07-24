@@ -29,8 +29,10 @@ import job_freshness
 ROOT = Path(__file__).parent.parent
 RESUME_FILE = ROOT / "data" / "resume_data.json"
 MODEL = DEFAULT_MODEL
-MAX_RESULTS_PER_QUERY = 5
+MAX_RESULTS_PER_QUERY = 20
 SEARCH_DOMAINS = ["linkedin.com", "boards.greenhouse.io", "jobs.lever.co", "workatastartup.com"]
+MAX_SEARCHES = 16
+MAX_PAGE_READS = 8
 
 
 def build_profile_summary(resume: dict, profile_slug: str = "") -> str:
@@ -209,10 +211,12 @@ def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dic
 Process:
 1. Run up to 16 searches across four sources — no more. Mix role titles and skill angles:
    a. site:linkedin.com/jobs/view <role> <skills> UK
-   b. site:boards.greenhouse.io <role> <skills>
-   c. site:jobs.lever.co <role> <skills>
-   d. site:workatastartup.com <role> <skills> — treat this source as SUPPLEMENTARY: only worth
-      searching if the other three sources haven't already covered a role/skill angle well.
+   b. site:linkedin.com/jobs/search keywords=<role> location=UK f_TPR=r432000 — a different query
+      shape than (a); use this angle too, not just direct listing pages.
+   c. site:boards.greenhouse.io <role> <skills>
+   d. site:jobs.lever.co <role> <skills>
+   e. site:workatastartup.com <role> <skills> — treat this source as SUPPLEMENTARY: only worth
+      searching if the other sources haven't already covered a role/skill angle well.
 2. Role angles to cover: Solution Architect, Integration Architect, API Architect, Data Architect, Senior/Lead/Principal Data Engineer, Data Platform Engineer.
 3. Skill angles to cover: MuleSoft, Apigee, Kafka, Apache Iceberg, Databricks, Snowflake, AWS data platform, Azure data platform, event-driven architecture, API management.
 4. After searching, stop. Read the top 8 job pages then score everything.
@@ -273,7 +277,18 @@ Return ONLY a JSON array, no other text:
                 time.sleep(wait)
         raise RuntimeError("API failed after 5 attempts")
 
+    search_count = 0
+    page_read_count = 0
+    iterations = 0
+    max_iterations = MAX_SEARCHES + MAX_PAGE_READS + 10
+
     while True:
+        iterations += 1
+        if iterations > max_iterations:
+            print(f"  ⚠️  Tool loop exceeded {max_iterations} iterations, stopping without scoring.")
+            all_jobs = []
+            break
+
         response = call_api(messages)
 
         messages.append({"role": "assistant", "content": response.content})
@@ -296,43 +311,55 @@ Return ONLY a JSON array, no other text:
                     continue
 
                 if block.name == "search_job_boards":
-                    query = block.input["query"]
-                    print(f"  Searching: {query}")
-                    try:
-                        results = tavily_client.search(
-                            query=query,
-                            max_results=MAX_RESULTS_PER_QUERY,
-                            search_depth="advanced",
-                            include_domains=SEARCH_DOMAINS,
-                        )
-                        hits = results.get("results", [])
-                        hits = [
-                            r for r in hits
-                            if job_store.derive_source(r.get("url", "")) != "other"
-                        ]
-                        formatted = [
-                            {
-                                "title": r.get("title", ""),
-                                "url": r.get("url", ""),
-                                "snippet": r.get("content", "")[:150],
-                            }
-                            for r in hits
-                        ]
-                        tool_output = json.dumps(formatted)
-                    except Exception as e:
-                        tool_output = json.dumps({"error": str(e)})
+                    if search_count >= MAX_SEARCHES:
+                        tool_output = json.dumps({
+                            "error": "Search limit reached. Stop searching and score the jobs found so far."
+                        })
+                    else:
+                        search_count += 1
+                        query = block.input["query"]
+                        print(f"  Searching ({search_count}/{MAX_SEARCHES}): {query}")
+                        try:
+                            results = tavily_client.search(
+                                query=query,
+                                max_results=MAX_RESULTS_PER_QUERY,
+                                search_depth="advanced",
+                                include_domains=SEARCH_DOMAINS,
+                            )
+                            hits = results.get("results", [])
+                            hits = [
+                                r for r in hits
+                                if job_store.derive_source(r.get("url", "")) != "other"
+                            ]
+                            formatted = [
+                                {
+                                    "title": r.get("title", ""),
+                                    "url": r.get("url", ""),
+                                    "snippet": r.get("content", "")[:150],
+                                }
+                                for r in hits
+                            ]
+                            tool_output = json.dumps(formatted)
+                        except Exception as e:
+                            tool_output = json.dumps({"error": str(e)})
 
                 elif block.name == "read_job_page":
-                    url = block.input["url"]
-                    print(f"  Reading full page: {url[:60]}...")
-                    try:
-                        result = tavily_client.extract(urls=[url])
-                        content = ""
-                        if result.get("results"):
-                            content = result["results"][0].get("raw_content", "")[:600]
-                        tool_output = json.dumps({"url": url, "content": content or "Could not extract content"})
-                    except Exception as e:
-                        tool_output = json.dumps({"error": str(e)})
+                    if page_read_count >= MAX_PAGE_READS:
+                        tool_output = json.dumps({
+                            "error": "Page read limit reached. Score using the data already gathered."
+                        })
+                    else:
+                        page_read_count += 1
+                        url = block.input["url"]
+                        print(f"  Reading full page ({page_read_count}/{MAX_PAGE_READS}): {url[:60]}...")
+                        try:
+                            result = tavily_client.extract(urls=[url])
+                            content = ""
+                            if result.get("results"):
+                                content = result["results"][0].get("raw_content", "")[:600]
+                            tool_output = json.dumps({"url": url, "content": content or "Could not extract content"})
+                        except Exception as e:
+                            tool_output = json.dumps({"error": str(e)})
 
                 tool_results.append({
                     "type": "tool_result",
