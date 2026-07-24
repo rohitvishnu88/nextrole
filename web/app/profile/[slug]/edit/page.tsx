@@ -64,7 +64,7 @@ export default function ResumeEditPage() {
       setDrafted(null);
       loadResume();
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : "Failed to save changes");
+      setApplyError(`Failed to save: ${err instanceof Error ? err.message : "unknown error"}`);
     }
   }
 
@@ -76,7 +76,7 @@ export default function ResumeEditPage() {
       setApplyError("");
       loadResume();
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : "Failed to delete entry");
+      setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
     }
   }
 
@@ -113,7 +113,6 @@ export default function ResumeEditPage() {
                 ) : (
                   <div className="mt-2 space-y-2">
                     <EditableItemForm value={drafted as Record<string, unknown>} onChange={setDrafted} />
-                    {applyError && <p className="text-xs text-red-500">{applyError}</p>}
                     <div className="flex gap-2">
                       <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
                       <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
@@ -145,7 +144,6 @@ export default function ResumeEditPage() {
                   />
                 </div>
               ))}
-              {applyError && <p className="text-xs text-red-500">{applyError}</p>}
               <div className="flex gap-2">
                 <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
                 <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
@@ -196,6 +194,12 @@ export default function ResumeEditPage() {
       </div>
 
       <h1 className="text-xl font-bold text-gray-900">Edit Resume</h1>
+
+      {applyError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+          <p className="text-sm text-red-700">{applyError}</p>
+        </div>
+      )}
 
       {renderListObjectSection("experience")}
       {renderListObjectSection("education")}
