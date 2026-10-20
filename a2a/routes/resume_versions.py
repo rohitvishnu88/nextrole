@@ -6,6 +6,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from a2a.auth import User, current_user
+from core.ai_clients import make_anthropic
 from a2a.ownership import require_profile
 from pydantic import BaseModel
 
@@ -346,7 +347,7 @@ def draft_section(slug: str, section: str, body: SectionDraft, user: User = Depe
 
     prompt = DRAFT_PROMPT_BUILDERS[kind](resume, section, body)
 
-    client = anthropic.Anthropic()
+    client = make_anthropic()
     response = client.messages.create(
         model=MODEL,
         max_tokens=2048,

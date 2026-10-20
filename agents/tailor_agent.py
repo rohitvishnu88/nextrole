@@ -17,6 +17,8 @@ import anthropic
 from tavily import TavilyClient
 
 ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+from core.ai_clients import make_anthropic, make_tavily
 sys.path.insert(0, str(ROOT / "core"))
 from config import MODEL as DEFAULT_MODEL, HUMANISE_RULES, extract_json_object
 import resume_builder as _resume_builder
@@ -51,7 +53,7 @@ def fetch_job_description_with_source(url: str) -> Tuple[str, str]:
         if content:
             return content, "page"
 
-    tavily = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+    tavily = make_tavily()
     try:
         result = tavily.extract(urls=[url])
         if result.get("results"):
@@ -328,7 +330,7 @@ def humanise_bullets_batch(client: anthropic.Anthropic, bullets: list[str]) -> l
 
 def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: str = "") -> dict:
     resume = load_resume(profile_slug)
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client = make_anthropic()
 
     # Get JD text from raw text, file, or URL
     jd_source = "page"

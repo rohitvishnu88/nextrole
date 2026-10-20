@@ -1,4 +1,5 @@
 MODEL = "claude-sonnet-4-6"
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
 
 HUMANISE_RULES = """
 Writing rules — apply to every sentence:

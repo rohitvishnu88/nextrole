@@ -9,6 +9,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 
 from a2a.auth import User, current_user
+from core.ai_clients import make_anthropic
+from core.config import HAIKU_MODEL
 from a2a.ownership import require_profile
 from pydantic import BaseModel
 
@@ -97,9 +99,9 @@ Return ONLY the JSON object, no other text.
 RESUME:
 {json.dumps(resume, indent=2)[:5000]}"""
 
-    client = anthropic.Anthropic()
+    client = make_anthropic()
     response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model=HAIKU_MODEL,
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from a2a.auth import User, current_user
+from core.ai_clients import make_anthropic
 from a2a.ownership import require_profile
 
 
@@ -38,8 +39,7 @@ def _fetch_job_text_with_source(url: str):
 
 
 def _make_client():
-    import anthropic
-    return anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    return make_anthropic()
 
 
 def _find_job(slug: str, job_id: str) -> dict:

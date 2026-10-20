@@ -24,6 +24,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path as _Path
 
+sys.path.insert(0, str(_Path(__file__).parent.parent))
+from core.ai_clients import make_anthropic
+
 import anthropic
 
 sys.path.insert(0, str(_Path(__file__).parent.parent / "core"))
@@ -142,7 +145,7 @@ def run(resume: dict) -> dict:
         print("  No LinkedIn export found. Running in resume-only mode — generating profile from scratch.")
         linkedin = None
 
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client = make_anthropic()
 
     if linkedin:
         prompt = f"""You are a LinkedIn profile optimisation expert. Your job is to compare a candidate's

@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from a2a.auth import User, current_user
+from core.ai_clients import make_anthropic
 from a2a.ownership import MAX_PROFILES_PER_USER, require_profile, unique_slug, visible_profiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -211,7 +212,7 @@ async def parse_resume(slug: str, file: UploadFile = File(...), user: User = Dep
     if not text.strip():
         raise HTTPException(status_code=422, detail="Could not extract text from the uploaded file")
 
-    client = anthropic.Anthropic()
+    client = make_anthropic()
 
     schema_example = _Path(__file__).parent.parent.parent / "data" / "resume_data.json"
     schema_hint = ""

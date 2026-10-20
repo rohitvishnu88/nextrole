@@ -19,6 +19,8 @@ from pathlib import Path
 import anthropic
 from tavily import TavilyClient
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from core.ai_clients import make_anthropic, make_tavily
 sys.path.insert(0, str(Path(__file__).parent.parent / "core"))
 from config import MODEL as DEFAULT_MODEL, extract_json_array
 
@@ -161,8 +163,8 @@ def send_email(jobs: list[dict], candidate_name: str) -> None:
 
 
 def run(resume: dict, include_seen: bool = False, profile_slug: str = "", send_email: bool = True) -> dict:
-    anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    tavily_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+    anthropic_client = make_anthropic()
+    tavily_client = make_tavily()
 
     profile = build_profile_summary(resume, profile_slug)
 

@@ -116,7 +116,7 @@ def test_run_writes_fit_and_base_sidecars(tmp_path, monkeypatch):
         "Cover letter final",
     )
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
-    monkeypatch.setattr(tailor_agent.anthropic, "Anthropic", lambda api_key: client)
+    monkeypatch.setattr("core.ai_clients._real_anthropic", lambda: client)
     monkeypatch.setattr(tailor_agent, "load_resume", lambda slug: BASE)
     monkeypatch.setattr(tailor_agent, "ROOT", tmp_path)
     monkeypatch.setattr(tailor_agent.job_analysis, "ROOT", tmp_path)
@@ -134,7 +134,7 @@ def test_run_writes_fit_and_base_sidecars(tmp_path, monkeypatch):
 
 def _run_with(monkeypatch, tmp_path, client, fetched=None):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
-    monkeypatch.setattr(tailor_agent.anthropic, "Anthropic", lambda api_key: client)
+    monkeypatch.setattr("core.ai_clients._real_anthropic", lambda: client)
     monkeypatch.setattr(tailor_agent, "load_resume", lambda slug: BASE)
     monkeypatch.setattr(tailor_agent, "ROOT", tmp_path)
     monkeypatch.setattr(tailor_agent.job_analysis, "ROOT", tmp_path)
