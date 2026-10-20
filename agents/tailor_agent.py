@@ -10,6 +10,7 @@ import os
 import re
 import sys
 from datetime import datetime
+from typing import List, Optional
 from pathlib import Path
 
 import anthropic
@@ -19,6 +20,11 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "core"))
 from config import MODEL as DEFAULT_MODEL, HUMANISE_RULES, extract_json_object
 import resume_builder as _resume_builder
+from ats_check import check_ats, extract_pdf_text
+from fabrication import find_fabrications
+
+sys.path.insert(0, str(Path(__file__).parent))
+import job_analysis
 
 RESUME_FILE = ROOT / "data" / "resume_data.json"
 RESUMES_DIR = ROOT / "output" / "resumes"
@@ -105,15 +111,38 @@ def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:40]
 
 
-def tailor_resume(client: anthropic.Anthropic, resume: dict, jd_text: str) -> dict:
-    prompt = f"""You are an expert resume writer. Tailor this resume to match the job description below.
+TAILOR_RULES = """Tailor my resume for this job.
 
-Rules:
-- Keep all facts accurate. Do not invent experience, skills, or achievements.
-- Rewrite the summary to speak directly to this role.
-- Reorder bullet points so the most relevant ones come first in each job.
-- Emphasise skills and tools mentioned in the JD that the candidate already has.
-- Remove or deprioritise bullets irrelevant to this role.
+You may:
+- reorder bullets so the relevant ones come first
+- change wording so my real work is described in their language
+- expand a bullet that matters here and shrink one that does not
+- adjust my summary and skills list to match what this job is about
+
+You may not:
+- add new claims, bigger scope, or titles I did not hold
+- stuff in keywords, or list a skill I could not be tested on
+
+At the end, list every change you made and mark the ones I need to confirm are accurate."""
+
+
+def _targets(analysis: Optional[dict]) -> str:
+    if not analysis:
+        return ""
+    reqs = [r.get("text", "") for r in analysis.get("requirements", [])
+            if r.get("filter_likelihood") in ("high", "medium")]
+    lines = ["", "The requirements most likely to be real filters for this job:"]
+    lines += [f"- {r}" for r in reqs if r]
+    if analysis.get("search_terms"):
+        lines.append("Exact terms from the ad: " + ", ".join(analysis["search_terms"]))
+    return "\n".join(lines)
+
+
+def tailor_resume(client: anthropic.Anthropic, resume: dict, jd_text: str, analysis: Optional[dict] = None) -> dict:
+    prompt = f"""You are an expert resume writer.
+
+{TAILOR_RULES}
+{_targets(analysis)}
 {HUMANISE_RULES}
 
 JOB DESCRIPTION:
@@ -122,19 +151,82 @@ JOB DESCRIPTION:
 CURRENT RESUME:
 {json.dumps(resume, indent=2)}
 
-Return the full tailored resume as a JSON object using the exact same structure as the input.
-Only change: summary, experience descriptions (reorder + rewrite bullets), skill group ordering.
 Do not change: name, email, phone, job titles, companies, dates, education, certifications.
-Return ONLY the JSON object, no other text."""
+
+Return ONLY a JSON object with two fields:
+- "resume": the full tailored resume using the exact same structure as the input
+- "changes": a list of every change, each {{"location": "summary" | "skills" | "experience[i].description[j]",
+  "kind": "reordered" | "reworded" | "expanded" | "shrunk" | "summary" | "skills",
+  "before": "original text", "after": "new text", "needs_confirmation": true or false, "reason": "why"}}.
+  Use the index of the bullet in the tailored resume for "location"."""
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=8096,
+        max_tokens=16000,
         messages=[{"role": "user", "content": prompt}],
     )
 
-    text = extract_json_object(response.content[0].text)
-    return json.loads(text)
+    parsed = json.loads(extract_json_object(response.content[0].text))
+    if "resume" not in parsed:
+        return {"resume": parsed, "changes": []}
+    changes = parsed.get("changes") if isinstance(parsed.get("changes"), list) else []
+    return {"resume": parsed["resume"], "changes": [c for c in changes if isinstance(c, dict)]}
+
+
+_BULLET_RE = re.compile(r"^experience\[(\d+)\]\.description\[(\d+)\]$")
+
+
+def _text_at(resume: dict, location: str) -> Optional[str]:
+    if location == "summary":
+        return resume.get("summary")
+    if location == "skills":
+        groups = resume.get("skills") or {}
+        values = groups.values() if isinstance(groups, dict) else [groups]
+        return ", ".join(s for group in values for s in (group if isinstance(group, list) else [group]) if isinstance(s, str))
+    match = _BULLET_RE.match(location or "")
+    if not match:
+        return None
+    i, j = int(match.group(1)), int(match.group(2))
+    experience = resume.get("experience") or []
+    if i >= len(experience):
+        return None
+    bullets = experience[i].get("description") or []
+    return bullets[j] if j < len(bullets) else None
+
+
+def realign_changes(changes: List[dict], final_resume: dict) -> List[dict]:
+    """Point each change's `after` at the final (post-humanise) wording, so the log matches the PDF."""
+    realigned = []
+    for change in changes:
+        change = dict(change)
+        final_text = _text_at(final_resume, change.get("location", ""))
+        if final_text is None:
+            change["stale"] = True
+        else:
+            change["after"] = final_text
+        realigned.append(change)
+    return realigned
+
+
+def ats_terms(analysis: Optional[dict]) -> List[str]:
+    if not analysis:
+        return []
+    terms = list(analysis.get("search_terms") or [])
+    for req in analysis.get("requirements") or []:
+        if req.get("filter_likelihood") == "high":
+            terms += req.get("key_terms") or []
+    return terms
+
+
+def recheck_fit(json_file: str, pdf_file: str, base_file: str, fit_file: str) -> dict:
+    """Re-run the deterministic checks after a hand edit; the change log is left as it was."""
+    tailored = json.loads(Path(json_file).read_text(encoding="utf-8"))
+    base = json.loads(Path(base_file).read_text(encoding="utf-8"))
+    fit = json.loads(Path(fit_file).read_text(encoding="utf-8"))
+    fit["fabrication_flags"] = find_fabrications(base, tailored)
+    fit["ats"] = check_ats(extract_pdf_text(pdf_file), fit.get("ats_terms") or [])
+    Path(fit_file).write_text(json.dumps(fit, indent=2), encoding="utf-8")
+    return fit
 
 
 def generate_cover_letter(client: anthropic.Anthropic, resume: dict, jd_text: str) -> str:
@@ -265,11 +357,20 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     resumes_dir.mkdir(parents=True, exist_ok=True)
     cover_letters_dir.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Tailor resume
-    print("  Tailoring resume...")
-    tailored = tailor_resume(client, resume, jd_text)
+    # Step 1: Analyse the job (cached). A job ad too short to analyse still gets tailored.
+    print("  Analysing job...")
+    try:
+        analysis = job_analysis.get_or_create_analysis(client, profile_slug, resume, jd_text) if profile_slug \
+            else job_analysis.analyse_job(client, resume, jd_text)
+    except job_analysis.JobTextTooShort:
+        analysis = None
 
-    # Step 2: Humanise the resume summary and all bullets (single batched call)
+    # Step 2: Tailor resume
+    print("  Tailoring resume...")
+    tailoring = tailor_resume(client, resume, jd_text, analysis)
+    tailored = tailoring["resume"]
+
+    # Step 3: Humanise the resume summary and all bullets (single batched call)
     print("  Humanising resume...")
     tailored["summary"] = humanise_pass(client, tailored.get("summary", ""))
 
@@ -285,11 +386,13 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
         for (i, j), h in zip(bullet_index, humanised):
             tailored["experience"][i]["description"][j] = h
 
-    # Step 3: Generate cover letter
+    changes = realign_changes(tailoring["changes"], tailored)
+
+    # Step 4: Generate cover letter
     print("  Generating cover letter...")
     cover_letter = generate_cover_letter(client, tailored, jd_text)
 
-    # Step 4: Humanise cover letter
+    # Step 5: Humanise cover letter
     print("  Humanising cover letter...")
     cover_letter = humanise_pass(client, cover_letter)
 
@@ -298,6 +401,8 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     html_out = resumes_dir / f"resume_{url_slug}.html"
     pdf_out = resumes_dir / f"resume_{url_slug}.pdf"
     meta_out = resumes_dir / f"meta_{url_slug}.json"
+    base_out = resumes_dir / f"base_{url_slug}.json"
+    fit_out = resumes_dir / f"fit_{url_slug}.json"
     cover_letter_txt = cover_letters_dir / f"cover_letter_{url_slug}.txt"
 
     with open(json_out, "w", encoding="utf-8") as f:
@@ -308,9 +413,27 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     # part of the tailored resume itself, and the in-memory job dict in
     # tailor_api.py doesn't survive a server restart.
     with open(meta_out, "w", encoding="utf-8") as f:
-        json.dump({"job_url": job_url, "created_at": datetime.now().astimezone().isoformat()}, f, indent=2)
+        json.dump({
+            "job_url": job_url,
+            "created_at": datetime.now().astimezone().isoformat(),
+            "analysis_id": analysis["analysis_id"] if analysis else None,
+        }, f, indent=2)
 
     _resume_builder.render_resume(tailored, str(html_out), str(pdf_out))
+
+    # Truthfulness and ATS checks run on the final PDF, against the base resume this run used.
+    with open(base_out, "w", encoding="utf-8") as f:
+        json.dump(resume, f, indent=2)
+    terms = ats_terms(analysis)
+    fit = {
+        "analysis_id": analysis["analysis_id"] if analysis else None,
+        "changes": changes,
+        "fabrication_flags": find_fabrications(resume, tailored),
+        "ats": check_ats(extract_pdf_text(str(pdf_out)), terms),
+        "ats_terms": terms,
+    }
+    with open(fit_out, "w", encoding="utf-8") as f:
+        json.dump(fit, f, indent=2)
 
     # Save cover letter
     with open(cover_letter_txt, "w", encoding="utf-8") as f:
@@ -328,4 +451,7 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
         "json_file": str(json_out),
         "pdf_file": str(pdf_out),
         "cover_letter_file": str(cover_letter_txt),
+        "fit_file": str(fit_out),
+        "base_file": str(base_out),
+        "analysis_id": analysis["analysis_id"] if analysis else None,
     }
