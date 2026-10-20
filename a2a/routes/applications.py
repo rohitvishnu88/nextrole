@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -19,6 +20,9 @@ class ApplicationCreate(BaseModel):
     notes: Optional[str] = None
     resume_file: Optional[str] = None
     cover_letter_file: Optional[str] = None
+    follow_up_date: Optional[str] = None
+    match_score: Optional[int] = None
+    analysis_id: Optional[str] = None
 
 
 class ApplicationPatch(BaseModel):
@@ -31,6 +35,7 @@ class ApplicationPatch(BaseModel):
     notes: Optional[str] = None
     resume_file: Optional[str] = None
     cover_letter_file: Optional[str] = None
+    follow_up_date: Optional[str] = None
 
 
 @router.get("")
@@ -51,6 +56,9 @@ def create_application(body: ApplicationCreate):
         notes=body.notes,
         resume_file=body.resume_file,
         cover_letter_file=body.cover_letter_file,
+        follow_up_date=body.follow_up_date,
+        match_score=body.match_score,
+        analysis_id=body.analysis_id,
     )
     apps = db.list_applications(body.profile_id)
     return next(a for a in apps if a["id"] == app_id)
@@ -58,11 +66,22 @@ def create_application(body: ApplicationCreate):
 
 @router.patch("/{app_id}")
 def update_application(app_id: str, body: ApplicationPatch):
-    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    # Only fields the client actually sent, so an explicit null clears a value.
+    fields = {k: getattr(body, k) for k in body.model_fields_set}
+    if any(fields.get(k, "") is None for k in ("job_title", "company", "status")):
+        raise HTTPException(status_code=400, detail="job_title, company and status cannot be cleared")
     updated = db.update_application(app_id, fields)
     if not updated:
         raise HTTPException(status_code=404, detail="Application not found")
     return {"updated": True}
+
+
+@router.post("/{app_id}/followed-up")
+def mark_followed_up(app_id: str):
+    next_date = (date.today() + timedelta(days=db.FOLLOW_UP_DAYS)).isoformat()
+    if not db.update_application(app_id, {"follow_up_date": next_date}):
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"follow_up_date": next_date}
 
 
 @router.delete("/{app_id}")
