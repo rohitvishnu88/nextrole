@@ -88,14 +88,19 @@ def start_job_analysis(slug: str, job_id: str, background_tasks: BackgroundTasks
         if (slug, job_id) in _running:
             return {"status": "analysing"}
         _running.add((slug, job_id))
-    # A saved analysis for this job costs nothing to reopen, so it doesn't use the allowance.
-    reservation_id = None
-    if _cached_analysis(slug, job["url"]) is None:
-        try:
-            reservation_id = metering.start(user, "analyse")
-        except HTTPException:
-            _running.discard((slug, job_id))
-            raise
+    # A saved analysis for this job is attached straight away: no fetch, no allowance.
+    cached = _cached_analysis(slug, job["url"])
+    if cached is not None:
+        store = job_store.load_store(slug)
+        job_store.set_analysis(store, job_id, cached["analysis_id"])
+        job_store.save_store(slug, store)
+        _running.discard((slug, job_id))
+        return {"status": "analysing"}
+    try:
+        reservation_id = metering.start(user, "analyse")
+    except HTTPException:
+        _running.discard((slug, job_id))
+        raise
     background_tasks.add_task(_run_analysis, slug, job_id, job["url"], reservation_id)
     return {"status": "analysing"}
 

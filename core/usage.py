@@ -7,13 +7,17 @@ Released runs still count towards the ceiling: that money was spent.
 import os
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
 from core import limits
 
 _DEFAULT_DB = Path(__file__).parent.parent / "data" / "applications.db"
+
+# A reservation still open after this long belongs to a run that died (server restart,
+# dropped stream); it's released so it stops holding allowance and budget.
+STALE_AFTER = timedelta(minutes=60)
 
 
 class LimitReached(Exception):
@@ -73,6 +77,11 @@ def reserve(user_id: Optional[str], action: str, is_owner: bool, now: Optional[d
     try:
         # One write transaction, so two simultaneous reserves can't both pass the checks.
         conn.execute("BEGIN IMMEDIATE")
+        current = now or datetime.now(timezone.utc)
+        conn.execute(
+            "UPDATE usage SET status = 'released' WHERE status = 'reserved' AND created_at < ?",
+            ((current - STALE_AFTER).isoformat(),),
+        )
         if not is_owner and action in limits.ACTION_LIMITS:
             used = conn.execute(
                 "SELECT COUNT(*) FROM usage WHERE user_id = ? AND action = ? AND month = ? AND status != 'released'",
@@ -85,7 +94,7 @@ def reserve(user_id: Optional[str], action: str, is_owner: bool, now: Optional[d
         reservation_id = str(uuid.uuid4())
         conn.execute(
             "INSERT INTO usage (id, user_id, action, status, month, estimate_usd, created_at) VALUES (?,?,?,?,?,?,?)",
-            (reservation_id, user_id, action, "reserved", month, estimate, datetime.now(timezone.utc).isoformat()),
+            (reservation_id, user_id, action, "reserved", month, estimate, current.isoformat()),
         )
         conn.execute("COMMIT")
         return reservation_id

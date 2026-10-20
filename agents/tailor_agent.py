@@ -11,6 +11,7 @@ import re
 import sys
 from datetime import datetime
 from typing import List, Optional, Tuple
+from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
 import anthropic
@@ -50,7 +51,8 @@ def fetch_job_description_with_source(url: str) -> Tuple[str, str]:
     validate_public_url(url)
     print(f"  Fetching job description from: {url[:70]}...")
 
-    if "linkedin.com/jobs" in url:
+    host = (urlparse(url).hostname or "").lower()
+    if (host == "linkedin.com" or host.endswith(".linkedin.com")) and "/jobs" in url:
         content = _fetch_with_playwright(url)
         if content:
             return content, "page"
@@ -80,15 +82,39 @@ def fetch_job_description(url: str) -> str:
     return fetch_job_description_with_source(url)[0]
 
 
+_REDIRECT_STATUSES = (301, 302, 303, 307, 308)
+
+
 def _guard_route(route) -> None:
-    """Playwright route handler: every request the page makes, redirects included,
-    must go to a public address."""
+    """Playwright route handler: every request the page makes must go to a public address.
+
+    Chromium follows server redirects without calling the route handler again, so page
+    loads are fetched here with redirects off, each hop checked, and the final response
+    handed to the page.
+    """
+    request = route.request
     try:
-        validate_public_url(route.request.url)
+        validate_public_url(request.url)
     except UnsafeURL:
         route.abort()
         return
-    route.continue_()
+    if request.resource_type != "document":
+        route.continue_()
+        return
+    url = request.url
+    for _ in range(10):
+        response = route.fetch(url=url, max_redirects=0)
+        location = response.headers.get("location")
+        if response.status not in _REDIRECT_STATUSES or not location:
+            route.fulfill(response=response)
+            return
+        url = urljoin(url, location)
+        try:
+            validate_public_url(url)
+        except UnsafeURL:
+            route.abort()
+            return
+    route.abort()
 
 
 def _fetch_with_playwright(url: str) -> str:

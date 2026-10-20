@@ -76,6 +76,11 @@ app.add_middleware(
 )
 
 @app.on_event("startup")
+def _require_metered_calls() -> None:
+    ai_clients.require_reservations(True)
+
+
+@app.on_event("startup")
 def _claim_unowned_profiles() -> None:
     from . import db, ownership
     owner = db.get_user_by_email(auth.owner_email()) if auth.owner_email() else None

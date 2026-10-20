@@ -16,6 +16,24 @@ from typing import Callable, Iterator, Optional
 from core import usage
 
 _current_reservation: ContextVar[Optional[str]] = ContextVar("usage_reservation", default=None)
+_require_reservation = False
+
+
+class MissingReservation(RuntimeError):
+    """An AI call reached the server without a reservation: it would go unmetered."""
+
+
+def require_reservations(required: bool) -> None:
+    """The server turns this on so a call that lost its reservation fails loudly, instead of
+    being quietly billed to the owner as a CLI run."""
+    global _require_reservation
+    _require_reservation = required
+
+
+def _cli_reservation() -> str:
+    if _require_reservation:
+        raise MissingReservation("AI call made without a usage reservation")
+    return usage.reserve(None, "cli", is_owner=True)
 
 
 def _real_anthropic():
@@ -48,7 +66,7 @@ def _run_metered(call: Callable, record: Callable[[str, object], None]):
         result = call()
         record(reservation_id, result)
         return result
-    cli_id = usage.reserve(None, "cli", is_owner=True)
+    cli_id = _cli_reservation()
     try:
         result = call()
     except Exception:
@@ -84,7 +102,7 @@ class _MeteredMessages:
     def stream(self, **kwargs):
         record = self._record(kwargs.get("model", ""))
         reservation_id = _current_reservation.get()
-        cli_id = None if reservation_id is not None else usage.reserve(None, "cli", is_owner=True)
+        cli_id = None if reservation_id is not None else _cli_reservation()
         try:
             with self._inner.messages.stream(**kwargs) as stream:
                 yield stream

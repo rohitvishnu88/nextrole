@@ -121,3 +121,13 @@ def test_no_direct_client_construction_left():
             if re.search(r"anthropic\.Anthropic\(|TavilyClient\(", text):
                 offenders.append(str(path.relative_to(ROOT)))
     assert offenders == []
+
+
+def test_server_mode_refuses_calls_without_reservation():
+    ai_clients.require_reservations(True)
+    try:
+        with pytest.raises(ai_clients.MissingReservation):
+            call_claude()
+    finally:
+        ai_clients.require_reservations(False)
+    assert usage.spent_this_month() == 0

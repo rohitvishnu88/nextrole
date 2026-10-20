@@ -18,7 +18,8 @@ def validate_public_url(url: str) -> str:
         raise UnsafeURL(f"Couldn't resolve {parsed.hostname}")
     for info in infos:
         address = ipaddress.ip_address(info[4][0].split("%")[0])
-        if (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved
-                or address.is_multicast or address.is_unspecified):
+        # is_global also excludes shared/CGNAT space (100.64.0.0/10, used by Tailscale),
+        # which is_private misses on Python 3.9.
+        if not address.is_global or address.is_multicast:
             raise UnsafeURL(f"{parsed.hostname} points to a private or local address")
     return url.strip()

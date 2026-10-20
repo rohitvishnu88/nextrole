@@ -181,3 +181,22 @@ def test_tailor_calls_metered_against_user_not_cli(env):
     actions = usage.summary(month())["by_action"]
     assert "cli" not in actions
     assert actions["tailor"] > 0
+
+
+def test_cached_analysis_makes_no_fetch_and_no_spend(env, monkeypatch):
+    monkeypatch.setattr(env.ja.job_analysis, "load_analysis", lambda slug, aid: {"analysis_id": "0123456789abcdef"})
+    monkeypatch.setattr(env.ja, "_fetch_job_text_with_source", lambda url: pytest.fail("fetched a cached job"))
+    c = env.make(FRIEND)
+    c.post(f"/api/profiles/friend/job-search/{env.job_id}/analyse")
+    assert c.get(f"/api/profiles/friend/job-search/{env.job_id}/analysis").json()["status"] == "ready"
+    assert usage.spent_this_month() == 0
+
+
+def test_search_brief_kept_when_limit_reached(env, tmp_path):
+    import os
+    brief = Path(os.environ["PROFILES_DIR"]) / "friend" / "search_brief.json"
+    brief.write_text(json.dumps({"headline": "keep me", "signals": []}))
+    for _ in range(3):
+        usage.commit(usage.reserve(FRIEND.id, "search_brief", is_owner=False))
+    assert env.make(FRIEND).post("/api/profiles/friend/search-brief/generate").status_code == 429
+    assert brief.exists()

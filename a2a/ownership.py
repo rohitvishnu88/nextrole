@@ -59,9 +59,22 @@ def require_profile(slug: str, user: User) -> dict:
     return profile
 
 
+def output_profiles_dir() -> Path:
+    base = os.environ.get("JOBS_OUTPUT_DIR", str(Path(__file__).parent.parent / "output"))
+    return Path(base) / "profiles"
+
+
 def unique_slug(base: str) -> str:
     base = re.sub(r"[^a-z0-9-]+", "-", base.lower()).strip("-") or "profile"
-    taken = {p["slug"] for p in load_meta()} | {d.name for d in profiles_dir().glob("*") if d.is_dir()}
+    # Anything a previous profile left behind (output files, applications) also counts as
+    # taken, so a new profile never inherits someone else's history.
+    from a2a import db
+    taken = (
+        {p["slug"] for p in load_meta()}
+        | {d.name for d in profiles_dir().glob("*") if d.is_dir()}
+        | {d.name for d in output_profiles_dir().glob("*") if d.is_dir()}
+        | db.application_profile_ids()
+    )
     if base not in taken:
         return base
     n = 2

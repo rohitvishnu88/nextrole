@@ -172,3 +172,26 @@ def test_assign_profile_script_moves_profile(profiles_dir):
     assert assign_profile.main(["legacy", "malini@example.com"]) == 0
     assert {p["slug"]: p for p in ownership.load_meta()}["legacy"]["owner_user_id"] == user["id"]
     assert assign_profile.main(["legacy", "nobody@example.com"]) != 0
+
+
+def test_deleting_profile_removes_its_output_and_applications(profiles_dir, tmp_path, monkeypatch):
+    from a2a import db
+    out = tmp_path / "out"
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(out))
+    import a2a.routes.profiles as profiles
+    importlib.reload(profiles)
+    monkeypatch.setattr(profiles, "_output_root", lambda: out)
+    (out / "profiles" / "friend" / "resumes").mkdir(parents=True)
+    db.create_application("friend", "Architect", "Acme", None, None, "saved", None, None, None, None)
+    c = make_app(FRIEND)
+    assert c.delete("/api/profiles/friend").status_code == 200
+    assert not (out / "profiles" / "friend").exists()
+    assert db.list_applications("friend") == []
+
+
+def test_unique_slug_skips_slugs_with_leftover_output(profiles_dir, tmp_path, monkeypatch):
+    from a2a import ownership
+    out = tmp_path / "out"
+    monkeypatch.setattr(ownership, "output_profiles_dir", lambda: out / "profiles")
+    (out / "profiles" / "priya").mkdir(parents=True)
+    assert ownership.unique_slug("priya") == "priya-2"

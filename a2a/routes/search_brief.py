@@ -129,12 +129,13 @@ def generate_search_brief(slug: str, background_tasks: BackgroundTasks, user: Us
     if not resume_file.exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
 
+    # Reserve first: a refused request must not cost the user their existing brief.
+    reservation_id = metering.start(user, "search_brief")
+
     # Delete old brief so GET returns 404 while generating
     brief_f = _brief_file(slug)
     if brief_f.exists():
         brief_f.unlink()
-
-    reservation_id = metering.start(user, "search_brief")
     background_tasks.add_task(_run_generation, slug, reservation_id)
     return {"status": "generating"}
 

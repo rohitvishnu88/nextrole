@@ -199,6 +199,20 @@ def update_application(app_id: str, fields: dict, today: Optional[date] = None) 
     return True
 
 
+def application_profile_ids() -> set:
+    init_db()
+    with _connect() as conn:
+        return {r[0] for r in conn.execute("SELECT DISTINCT profile_id FROM applications").fetchall()}
+
+
+def delete_applications_for_profile(profile_id: str) -> int:
+    init_db()
+    with _connect() as conn:
+        result = conn.execute("DELETE FROM applications WHERE profile_id = ?", (profile_id,))
+        conn.commit()
+    return result.rowcount
+
+
 def delete_application(app_id: str) -> bool:
     with _connect() as conn:
         result = conn.execute("DELETE FROM applications WHERE id = ?", (app_id,))

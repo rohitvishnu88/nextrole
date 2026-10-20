@@ -15,7 +15,7 @@ from a2a.ownership import MAX_PROFILES_PER_USER, require_profile, unique_slug, v
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from a2a import resume_history
+from a2a import db, resume_history
 
 router = APIRouter(prefix="/api/profiles", tags=["profiles"])
 
@@ -25,6 +25,10 @@ _PARSE_CACHE: Dict[str, dict] = {}
 def _profiles_dir() -> Path:
     base = os.environ.get("PROFILES_DIR", str(Path(__file__).parent.parent.parent / "data" / "profiles"))
     return Path(base)
+
+
+def _output_root() -> Path:
+    return Path(os.environ.get("JOBS_OUTPUT_DIR", str(Path(__file__).parent.parent.parent / "output")))
 
 
 def _meta_file() -> Path:
@@ -120,9 +124,11 @@ def delete_profile(slug: str, user: User = Depends(current_user)):
     if len(updated) == len(profiles):
         raise HTTPException(status_code=404, detail="Profile not found")
     _save_meta(updated)
-    profile_dir = _profiles_dir() / slug
-    if profile_dir.exists():
-        shutil.rmtree(profile_dir)
+    # Remove everything keyed by this slug, so a future profile with the same name starts clean.
+    for folder in (_profiles_dir() / slug, _output_root() / "profiles" / slug):
+        if folder.exists():
+            shutil.rmtree(folder)
+    db.delete_applications_for_profile(slug)
     return {"deleted": slug}
 
 

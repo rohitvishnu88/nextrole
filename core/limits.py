@@ -9,10 +9,12 @@ ACTION_LIMITS = {
     "search_brief": 3,
 }
 
-# Held against the ceiling while an action is in flight; worst-case per action.
+# Held against the ceiling while an action is in flight; deliberately pessimistic.
+# A job search can run up to ~34 Sonnet turns with growing context, and one measured
+# tailor run cost $0.13 without its analysis; revisit once real runs are in the ledger.
 ACTION_ESTIMATES_USD = {
-    "job_search": 0.60,
-    "tailor": 0.30,
+    "job_search": 2.00,
+    "tailor": 0.50,
     "analyse": 0.10,
     "section_draft": 0.03,
     "resume_parse": 0.05,

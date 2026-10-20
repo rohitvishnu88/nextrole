@@ -43,11 +43,13 @@ def test_release_does_not_count_against_allowance_but_cost_counts_to_budget(usag
 
 
 def test_in_flight_estimates_block_budget(usage):
+    hold = usage.limits.ACTION_ESTIMATES_USD["job_search"]
     filler = usage.reserve("owner", "cli", is_owner=True, now=NOW)
-    usage.record_call(filler, model="claude-sonnet-4-6", output_tokens=3_166_667)  # ~$47.50
+    committed = usage.limits.MONTHLY_BUDGET_USD - 4 * hold - 0.10  # room for exactly four holds
+    usage.record_call(filler, model="claude-sonnet-4-6", output_tokens=round(committed / 15 * 1_000_000))
     usage.commit(filler)
     for user in ("a", "b", "c", "d"):
-        usage.reserve(user, "job_search", is_owner=False, now=NOW)  # 4 x 0.60 held in flight
+        usage.reserve(user, "job_search", is_owner=False, now=NOW)  # four estimates held in flight
     with pytest.raises(usage.LimitReached) as exc:
         usage.reserve("e", "job_search", is_owner=False, now=NOW)
     assert exc.value.code == "budget_reached"
@@ -55,7 +57,7 @@ def test_in_flight_estimates_block_budget(usage):
 
 def test_commit_replaces_estimate_with_measured_cost(usage):
     rid = usage.reserve("u1", "job_search", is_owner=False, now=NOW)
-    assert usage.spent_this_month(now=NOW) == pytest.approx(0.60)
+    assert usage.spent_this_month(now=NOW) == pytest.approx(usage.limits.ACTION_ESTIMATES_USD["job_search"])
     usage.record_call(rid, tavily_credits=10)
     usage.commit(rid)
     assert usage.spent_this_month(now=NOW) == pytest.approx(0.08)
@@ -77,3 +79,13 @@ def test_month_rollover_resets_counts(usage):
     usage.reserve("u1", "job_search", is_owner=False, now=datetime(2026, 11, 1, tzinfo=timezone.utc))
     assert usage.resets_on("2026-12") == "2027-01-01"
     assert usage.month_of(NOW) == "2026-10"
+
+
+def test_stale_reservations_are_released(usage, monkeypatch):
+    from datetime import timedelta
+    old = usage.reserve("u1", "job_search", is_owner=False, now=NOW)
+    conn = usage._connect()
+    conn.execute("UPDATE usage SET created_at = ? WHERE id = ?", ((NOW - timedelta(hours=2)).isoformat(), old))
+    conn.close()
+    usage.reserve("u2", "tailor", is_owner=False, now=NOW)
+    assert usage.counts_for("u1", "2026-10").get("job_search", 0) == 0

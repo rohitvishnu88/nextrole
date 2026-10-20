@@ -36,18 +36,21 @@ def setup(tmp_path, monkeypatch):
     job_id = job_store.make_job_id(JOB_URL)
 
     calls = []
+    saved = set()
 
     def fake_analysis(client, slug, resume, jd_text, source_url=None):
         calls.append(jd_text)
         if len(jd_text) < job_analysis.MIN_JD_CHARS:
             raise job_analysis.JobTextTooShort("Couldn't read the full job ad. Tailor it with the ad text pasted instead.")
+        saved.add("0123456789abcdef")
         return {"analysis_id": "0123456789abcdef", "match_score": 80, "verdict": "strong fit"}
 
     monkeypatch.setattr(mod, "_fetch_job_text_with_source", lambda url: (JD, "page"))
     monkeypatch.setattr(mod, "_make_client", lambda: object())
     monkeypatch.setattr(mod.job_analysis, "get_or_create_analysis", fake_analysis)
+    # Only analyses the fake actually produced exist, like the real on-disk cache.
     monkeypatch.setattr(mod.job_analysis, "load_analysis",
-                        lambda slug, aid: {"analysis_id": aid, "match_score": 80, "verdict": "strong fit"})
+                        lambda slug, aid: {"analysis_id": aid, "match_score": 80, "verdict": "strong fit"} if aid in saved else None)
 
     app = FastAPI()
     app.include_router(mod.router)
