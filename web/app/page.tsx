@@ -5,6 +5,7 @@ import * as api from "@/lib/api";
 import type { Application, Profile, TailorHistoryEntry } from "@/lib/types";
 import { StatusMarker } from "@/components/ui/StatusMarker";
 import { PageCircle } from "@/components/ui/PageCircle";
+import { ScoreMarker } from "@/components/ui/ScoreMarker";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { greeting } from "@/lib/greeting";
 import { ArrowRight, Download, FileText, Wand2 } from "lucide-react";
@@ -41,6 +42,9 @@ export default function Dashboard() {
   const name = profiles.find(p => p.slug === profile)?.name;
   const active = apps.filter(a => a.status !== "rejected" && a.status !== "offer").length;
   const recent = [...apps].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5);
+  const overdue = apps.filter(a => a.overdue).length;
+  const scores = apps.map(a => a.match_score).filter((s): s is number => s !== null && s !== undefined);
+  const averageMatch = scores.length ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : null;
 
   return (
     <div className="space-y-12">
@@ -50,8 +54,15 @@ export default function Dashboard() {
           <h1 className="text-5xl md:text-6xl font-bold leading-none">
             {greeting(new Date())}{name ? <>, {name}</> : null}
           </h1>
-          <p className="text-base">
-            {active} active application{active !== 1 ? "s" : ""}.
+          <p className="text-base flex items-center gap-2">
+            {overdue > 0 ? (
+              <>
+                <span aria-hidden className="w-2.5 h-2.5 bg-red shrink-0" />
+                {overdue} application{overdue !== 1 ? "s" : ""} need{overdue === 1 ? "s" : ""} a follow-up.
+              </>
+            ) : (
+              <>{active} active application{active !== 1 ? "s" : ""}.</>
+            )}
           </p>
           <Link
             href="/tailor"
@@ -63,10 +74,11 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-3 gap-0">
+      <section className={`grid gap-0 ${averageMatch !== null ? "grid-cols-2 sm:grid-cols-4 gap-y-4" : "grid-cols-3"}`}>
         <Stat value={apps.length} label="applications" />
         <Stat value={apps.filter(a => a.status === "interview").length} label="interviews" />
         <Stat value={apps.filter(a => a.status === "offer").length} label="offers" />
+        {averageMatch !== null && <Stat value={averageMatch} label="avg match" />}
       </section>
 
       <section>
@@ -83,13 +95,14 @@ export default function Dashboard() {
         ) : (
           <div>
             {recent.map(app => (
-              <div key={app.id} className="grid grid-cols-[2fr_1fr_120px] items-center gap-4 py-3 border-t-[1.5px] border-ink text-sm">
+              <div key={app.id} className="grid grid-cols-[2fr_1fr_110px_48px] items-center gap-4 py-3 border-t-[1.5px] border-ink text-sm">
                 <span>
                   <span className="font-medium">{app.job_title}</span>
                   <span className="text-ink-muted"> · {app.company}</span>
                 </span>
                 <span className="text-ink-muted">{formatDate(app.applied_date ?? app.updated_at)}</span>
                 <StatusMarker status={app.status} />
+                {app.match_score !== null ? <ScoreMarker score={app.match_score} /> : <span />}
               </div>
             ))}
           </div>
@@ -109,8 +122,10 @@ export default function Dashboard() {
                 ) : (
                   <p className="text-sm font-medium">tailored resume</p>
                 )}
-                <p className="text-xs text-ink-muted mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5 flex items-center gap-3">
                   {new Date(entry.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  {entry.match_score !== null && <ScoreMarker score={entry.match_score} />}
+                  {entry.verdict && <span>{entry.verdict}</span>}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

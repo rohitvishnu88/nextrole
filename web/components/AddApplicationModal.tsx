@@ -7,13 +7,15 @@ import * as api from "@/lib/api";
 interface Props {
   profileId: string;
   prefillUrl?: string;
+  matchScore?: number | null;
+  analysisId?: string | null;
   onClose: () => void;
   onCreated: () => void;
 }
 
 const STATUSES: ApplicationStatus[] = ["saved", "applied", "interview", "offer", "rejected"];
 
-export function AddApplicationModal({ profileId, prefillUrl, onClose, onCreated }: Props) {
+export function AddApplicationModal({ profileId, prefillUrl, matchScore, analysisId, onClose, onCreated }: Props) {
   const [form, setForm] = useState({
     job_title: "", company: "", location: "", url: prefillUrl ?? "", status: "applied" as ApplicationStatus, notes: "",
   });
@@ -31,6 +33,8 @@ export function AddApplicationModal({ profileId, prefillUrl, onClose, onCreated 
         location: form.location || undefined,
         url: form.url || undefined,
         notes: form.notes || undefined,
+        match_score: matchScore ?? null,
+        analysis_id: analysisId ?? null,
       });
       onCreated();
     } catch (e: unknown) {

@@ -227,6 +227,8 @@ function TailorPageInner() {
         <AddApplicationModal
           profileId={profile}
           prefillUrl={job?.url}
+          matchScore={fit?.analysis?.match_score ?? null}
+          analysisId={fit?.analysis?.analysis_id ?? null}
           onClose={() => setShowAddToTracker(false)}
           onCreated={() => setShowAddToTracker(false)}
         />

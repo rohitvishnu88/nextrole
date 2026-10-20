@@ -26,7 +26,10 @@ function KanbanCard({ app, isDragging }: { app: Application; isDragging?: boolea
       {...listeners}
       className="bg-surface px-3.5 py-3 border-[1.5px] border-ink cursor-grab active:cursor-grabbing"
     >
-      <p className="text-sm font-bold text-ink truncate">{app.company}</p>
+      <p className="text-sm font-bold text-ink truncate flex items-center gap-2">
+        {app.overdue && <span aria-label="follow-up overdue" className="w-2.5 h-2.5 bg-red shrink-0" />}
+        {app.company}
+      </p>
       <p className="text-xs text-ink-muted truncate mt-0.5">{app.job_title}</p>
       {app.applied_date && <p className="text-xs text-ink-muted mt-1.5">{app.applied_date}</p>}
     </div>
