@@ -100,7 +100,7 @@ def test_recheck_fit_survives_missing_sections(tmp_path, monkeypatch):
 
 
 def test_run_writes_fit_and_base_sidecars(tmp_path, monkeypatch):
-    jd = "Senior Integration Architect, Kafka at scale. " * 20
+    jd = "Senior Integration Architect, Kafka at scale. " * 30
     analysis = {"search_terms": ["Kafka"], "verdict": "strong fit", "requirements": [
         {"text": "Kafka", "filter_likelihood": "high", "key_terms": ["Kafka"], "meets": "yes"}]}
     tailored = json.loads(json.dumps(BASE))
@@ -130,3 +130,35 @@ def test_run_writes_fit_and_base_sidecars(tmp_path, monkeypatch):
     assert fit["changes"][0]["after"] == "Cut integration costs by 40%"
     assert {"location": "experience[0].description[1]", "kind": "number", "text": "40%"} in fit["fabrication_flags"]
     assert fit["ats"]["terms"] == [{"term": "Kafka", "present": True}]
+
+
+def _run_with(monkeypatch, tmp_path, client, fetched=None):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setattr(tailor_agent.anthropic, "Anthropic", lambda api_key: client)
+    monkeypatch.setattr(tailor_agent, "load_resume", lambda slug: BASE)
+    monkeypatch.setattr(tailor_agent, "ROOT", tmp_path)
+    monkeypatch.setattr(tailor_agent.job_analysis, "ROOT", tmp_path)
+    if fetched is not None:
+        monkeypatch.setattr(tailor_agent, "fetch_job_description_with_source", lambda url: fetched)
+
+
+def _tailor_replies():
+    return (json.dumps({"resume": BASE, "changes": []}), "Integration architect.",
+            "1. Built Kafka pipelines\n2. Cut integration costs", "Cover draft", "Cover final")
+
+
+def test_unparseable_analysis_still_tailors(tmp_path, monkeypatch):
+    client = FakeClient("I can't produce JSON for this.", *_tailor_replies())
+    _run_with(monkeypatch, tmp_path, client)
+    result = tailor_agent.run(jd_text="Senior Integration Architect, Kafka at scale. " * 30, profile_slug="test-user")
+    assert result["status"] == "completed"
+    assert result["analysis_id"] is None
+
+
+def test_search_fallback_text_is_not_analysed(tmp_path, monkeypatch):
+    client = FakeClient(*_tailor_replies())
+    _run_with(monkeypatch, tmp_path, client, fetched=("A long search snippet about the role. " * 40, "search"))
+    result = tailor_agent.run(job_url="https://jobs.lever.co/acme/1", profile_slug="test-user")
+    assert result["status"] == "completed"
+    assert result["analysis_id"] is None
+    assert "Rank the requirements" not in client.prompt(0)

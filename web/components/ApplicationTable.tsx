@@ -42,6 +42,11 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
     onRefresh();
   }
 
+  async function handleFollowUpDate(id: string, value: string) {
+    await api.updateApplication(id, { follow_up_date: value || null });
+    onRefresh();
+  }
+
   async function handleClearFollowUp(id: string) {
     await api.updateApplication(id, { follow_up_date: null });
     onRefresh();
@@ -77,18 +82,25 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
               <td className="pr-4 py-3.5 text-ink-muted">{app.applied_date ?? "—"}</td>
               <td className="pr-4 py-3.5"><ScoreMarker score={app.match_score} /></td>
               <td className="pr-4 py-3.5">
-                {app.follow_up_date ? (
-                  <div className="flex flex-col gap-1">
-                    <span className={`flex items-center gap-2 ${app.overdue ? "font-bold" : "text-ink-muted"}`}>
-                      {app.overdue && <span aria-hidden className="w-2.5 h-2.5 bg-red shrink-0" />}
-                      {app.follow_up_date}{app.overdue ? " · overdue" : ""}
-                    </span>
+                <div className="flex flex-col gap-1">
+                  <span className={`flex items-center gap-2 ${app.overdue ? "font-bold" : "text-ink-muted"}`}>
+                    {app.overdue && <span aria-hidden className="w-2.5 h-2.5 bg-red shrink-0" />}
+                    <input
+                      type="date"
+                      aria-label={`follow-up date for ${app.company}`}
+                      value={app.follow_up_date ?? ""}
+                      onChange={e => handleFollowUpDate(app.id, e.target.value)}
+                      className="bg-transparent border-b border-rule-soft text-sm focus:outline-none focus:border-ink"
+                    />
+                    {app.overdue ? "overdue" : ""}
+                  </span>
+                  {app.follow_up_date && (
                     <span className="flex gap-3 text-xs">
                       <button onClick={() => handleFollowedUp(app.id)} className="underline">followed up</button>
                       <button onClick={() => handleClearFollowUp(app.id)} className="underline text-ink-muted">clear</button>
                     </span>
-                  </div>
-                ) : "—"}
+                  )}
+                </div>
               </td>
               <td className="pr-4 py-3.5 text-right">
                 <button onClick={() => handleDelete(app.id)} className="text-rule-soft hover:text-ink transition-colors">

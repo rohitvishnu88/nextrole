@@ -9,7 +9,7 @@ from typing import Iterator, List, Tuple
 NUMBER_RE = re.compile(r"[£$€]?\d[\d,.]*\s?(?:%|bn|k|m|x|\+)?", re.I)
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#./-]*")
 IDENTITY_FIELDS = ("title", "company", "start_date", "end_date")
-TOP_IDENTITY_FIELDS = ("name", "email", "phone")
+TOP_IDENTITY_FIELDS = ("name", "designation", "email", "phone")
 
 
 def _strings(value) -> Iterator[str]:
@@ -31,6 +31,8 @@ def _prose(resume: dict) -> Iterator[Tuple[str, str]]:
     if resume.get("summary"):
         yield "summary", resume["summary"]
     for i, exp in enumerate(resume.get("experience") or []):
+        if exp.get("highlight"):
+            yield f"experience[{i}].highlight", exp["highlight"]
         for j, bullet in enumerate(exp.get("description") or []):
             yield f"experience[{i}].description[{j}]", bullet
 

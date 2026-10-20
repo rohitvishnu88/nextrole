@@ -578,3 +578,12 @@ def test_merge_job_defaults_triage_fields():
     job = store["jobs"][job_store.make_job_id("https://jobs.lever.co/a/2")]
     assert job["red_flags"] == []
     assert job["text_basis"] == "snippet"
+
+
+def test_merge_job_coerces_non_list_red_flags():
+    store = {"jobs": {}}
+    job_store.merge_job(store, {
+        "url": "https://jobs.lever.co/a/3", "source": "lever", "title": "Architect", "company": "Acme",
+        "red_flags": "no sponsorship",
+    }, "2026-10-20T00:00:00")
+    assert store["jobs"][job_store.make_job_id("https://jobs.lever.co/a/3")]["red_flags"] == ["no sponsorship"]

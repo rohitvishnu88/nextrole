@@ -11,7 +11,7 @@ import job_analysis
 from fakes import FakeClient
 
 RESUME = {"name": "Test User", "summary": "Integration architect", "experience": []}
-JD = "Senior Integration Architect. " * 30
+JD = "Senior Integration Architect. " * 40
 
 ANALYSIS = {
     "what_it_really_is": "An integration lead role.",
@@ -95,3 +95,11 @@ def test_same_url_reuses_analysis_even_if_fetched_text_differs(tmp_path, monkeyp
     second = job_analysis.get_or_create_analysis(client, "rohit", RESUME, JD + " Apply now.", source_url=url)
     assert len(client.calls) == 1
     assert first["analysis_id"] == second["analysis_id"]
+
+
+def test_shell_text_under_new_minimum_raises():
+    client = FakeClient()
+    shell = "Sign in to apply. Accept cookies. Workday careers home. " * 10  # ~560 chars of boilerplate
+    with pytest.raises(job_analysis.JobTextTooShort):
+        job_analysis.analyse_job(client, RESUME, shell)
+    assert client.calls == []

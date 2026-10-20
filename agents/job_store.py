@@ -91,6 +91,13 @@ def is_cross_source_duplicate(candidate: dict, existing_jobs: dict) -> bool:
     return False
 
 
+def _red_flags(candidate: dict) -> list:
+    flags = candidate.get("red_flags") or []
+    if isinstance(flags, str):
+        flags = [flags]
+    return [f for f in flags if isinstance(f, str)] if isinstance(flags, list) else []
+
+
 def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
     jobs = store.setdefault("jobs", {})
     job_id = make_job_id(candidate["url"])
@@ -105,7 +112,7 @@ def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
             "url": candidate["url"],
             "relevance_score": candidate.get("relevance_score", 0),
             "match_reason": candidate.get("match_reason", ""),
-            "red_flags": candidate.get("red_flags") or [],
+            "red_flags": _red_flags(candidate),
             "text_basis": candidate.get("text_basis", "snippet"),
             "status": "new",
             "first_seen_at": now_iso,
@@ -117,7 +124,7 @@ def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
     if existing["status"] in ("new", "seen"):
         existing["relevance_score"] = candidate.get("relevance_score", existing["relevance_score"])
         existing["match_reason"] = candidate.get("match_reason", existing["match_reason"])
-        existing["red_flags"] = candidate.get("red_flags") or []
+        existing["red_flags"] = _red_flags(candidate)
         existing["text_basis"] = candidate.get("text_basis", "snippet")
         existing["last_verified_at"] = now_iso
 

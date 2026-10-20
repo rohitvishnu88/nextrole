@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 JOB_URL = "https://jobs.lever.co/acme/123"
-JD = "Senior Integration Architect at Acme. " * 20
+JD = "Senior Integration Architect at Acme. " * 40
 
 
 @pytest.fixture
@@ -38,10 +38,10 @@ def setup(tmp_path, monkeypatch):
     def fake_analysis(client, slug, resume, jd_text, source_url=None):
         calls.append(jd_text)
         if len(jd_text) < job_analysis.MIN_JD_CHARS:
-            raise job_analysis.JobTextTooShort("Couldn't read the full job ad. Paste the job description text instead.")
+            raise job_analysis.JobTextTooShort("Couldn't read the full job ad. Tailor it with the ad text pasted instead.")
         return {"analysis_id": "0123456789abcdef", "match_score": 80, "verdict": "strong fit"}
 
-    monkeypatch.setattr(mod, "_fetch_job_text", lambda url: JD)
+    monkeypatch.setattr(mod, "_fetch_job_text_with_source", lambda url: (JD, "page"))
     monkeypatch.setattr(mod, "_make_client", lambda: object())
     monkeypatch.setattr(mod.job_analysis, "get_or_create_analysis", fake_analysis)
     monkeypatch.setattr(mod.job_analysis, "load_analysis",
@@ -74,10 +74,10 @@ def test_second_analyse_while_running_does_not_start_again(setup):
 
 def test_short_text_reports_failed_with_message(setup, monkeypatch):
     client, mod, job_id, calls = setup
-    monkeypatch.setattr(mod, "_fetch_job_text", lambda url: "Sign in to view")
+    monkeypatch.setattr(mod, "_fetch_job_text_with_source", lambda url: ("Sign in to view", "page"))
     client.post(f"/api/profiles/test-user/job-search/{job_id}/analyse")
     result = client.get(f"/api/profiles/test-user/job-search/{job_id}/analysis").json()
-    assert result == {"status": "failed", "error": "Couldn't read the full job ad. Paste the job description text instead."}
+    assert result == {"status": "failed", "error": "Couldn't read the full job ad. Tailor it with the ad text pasted instead."}
 
 
 def test_unknown_job_404(setup):
@@ -88,3 +88,12 @@ def test_unknown_job_404(setup):
 def test_bad_slug_400(setup):
     client, *_ = setup
     assert client.post("/api/profiles/bad..slug/job-search/x/analyse").status_code == 400
+
+
+def test_search_fallback_text_reports_failed(setup, monkeypatch):
+    client, mod, job_id, calls = setup
+    monkeypatch.setattr(mod, "_fetch_job_text_with_source", lambda url: (JD, "search"))
+    client.post(f"/api/profiles/test-user/job-search/{job_id}/analyse")
+    result = client.get(f"/api/profiles/test-user/job-search/{job_id}/analysis").json()
+    assert result["status"] == "failed"
+    assert calls == []

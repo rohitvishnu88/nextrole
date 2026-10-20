@@ -17,7 +17,8 @@ from config import MODEL, extract_json_object
 from job_score import compute_match_score
 from job_store import validate_slug
 
-MIN_JD_CHARS = 400
+# Below this it's a login wall, JS shell or snippet, not an ad worth a verdict.
+MIN_JD_CHARS = 1000
 ANALYSIS_ID_RE = re.compile(r"^[a-f0-9]{16}$")
 
 LIKELIHOODS = ("high", "medium", "low", "filler")
@@ -128,7 +129,7 @@ def normalise_analysis(raw: dict) -> dict:
 
 def analyse_job(client, resume: dict, jd_text: str, source_url: Optional[str] = None) -> dict:
     if len(_normalise_text(jd_text)) < MIN_JD_CHARS:
-        raise JobTextTooShort("Couldn't read the full job ad. Paste the job description text instead.")
+        raise JobTextTooShort("Couldn't read the full job ad. Tailor it with the ad text pasted instead.")
 
     prompt = f"""You are helping a candidate decide how well they fit a job and what to do about the gaps.
 

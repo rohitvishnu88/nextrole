@@ -10,7 +10,7 @@ import os
 import re
 import sys
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pathlib import Path
 
 import anthropic
@@ -41,13 +41,15 @@ def load_resume(profile_slug: str = "") -> dict:
         return json.load(f)
 
 
-def fetch_job_description(url: str) -> str:
+def fetch_job_description_with_source(url: str) -> Tuple[str, str]:
+    """Return (text, source). source is "page" for the ad itself, "search" for the
+    search-snippet fallback (often a different page), or "" when nothing was found."""
     print(f"  Fetching job description from: {url[:70]}...")
 
     if "linkedin.com/jobs" in url:
         content = _fetch_with_playwright(url)
         if content:
-            return content
+            return content, "page"
 
     tavily = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
     try:
@@ -55,7 +57,7 @@ def fetch_job_description(url: str) -> str:
         if result.get("results"):
             content = result["results"][0].get("raw_content", "")
             if content:
-                return content[:20000]
+                return content[:20000], "page"
     except Exception as e:
         print(f"  ⚠️  Tavily extract failed ({e}), falling back to search...")
 
@@ -63,11 +65,15 @@ def fetch_job_description(url: str) -> str:
         results = tavily.search(query=url, max_results=1, search_depth="basic")
         hits = results.get("results", [])
         if hits:
-            return hits[0].get("content", "")[:20000]
+            return hits[0].get("content", "")[:20000], "search"
     except Exception as e:
         print(f"  ⚠️  Search fallback failed: {e}")
 
-    return ""
+    return "", ""
+
+
+def fetch_job_description(url: str) -> str:
+    return fetch_job_description_with_source(url)[0]
 
 
 def _fetch_with_playwright(url: str) -> str:
@@ -151,7 +157,7 @@ JOB DESCRIPTION:
 CURRENT RESUME:
 {json.dumps(resume, indent=2)}
 
-Do not change: name, email, phone, job titles, companies, dates, education, certifications.
+Do not change: name, designation, email, phone, job titles, companies, dates, education, certifications.
 
 Return ONLY a JSON object with two fields:
 - "resume": the full tailored resume using the exact same structure as the input
@@ -325,6 +331,7 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # Get JD text from raw text, file, or URL
+    jd_source = "page"
     if jd_text:
         source_slug = "jd_text"
     elif jd_file:
@@ -337,7 +344,7 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
         jd_text = jd_path.read_text(encoding="utf-8")
         source_slug = slugify(jd_path.stem)
     else:
-        jd_text = fetch_job_description(job_url)
+        jd_text, jd_source = fetch_job_description_with_source(job_url)
         if not jd_text:
             return {"status": "error", "reason": "Could not fetch job description from URL."}
         source_slug = slugify(job_url.split("/")[-1] or job_url.split("/")[-2])
@@ -359,11 +366,17 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
 
     # Step 1: Analyse the job (cached). A job ad too short to analyse still gets tailored.
     print("  Analysing job...")
-    try:
-        analysis = job_analysis.get_or_create_analysis(client, profile_slug, resume, jd_text, job_url or None) \
-            if profile_slug else job_analysis.analyse_job(client, resume, jd_text, job_url or None)
-    except job_analysis.JobTextTooShort:
-        analysis = None
+    # The analysis is advice: if it can't run (search snippet only, too little text, bad
+    # model output), tailoring carries on without it.
+    analysis = None
+    if jd_source == "search":
+        print("  ⚠️  Only a search snippet was found, skipping job analysis.")
+    else:
+        try:
+            analysis = job_analysis.get_or_create_analysis(client, profile_slug, resume, jd_text, job_url or None) \
+                if profile_slug else job_analysis.analyse_job(client, resume, jd_text, job_url or None)
+        except Exception as e:
+            print(f"  ⚠️  Job analysis unavailable ({e}), tailoring without it.")
 
     # Step 2: Tailor resume
     print("  Tailoring resume...")

@@ -49,6 +49,9 @@ export function JobCard({
         const r = await api.getJobAnalysis(profile, job.id);
         if (r.status === "ready") { setAnalysis(r.analysis); setAnalysing(false); }
         else if (r.status === "failed") { setAnalysisError(r.error); setAnalysing(false); }
+        // "none" after we started means the run ended without a saved result (server
+        // restart, or a search overwrote the job list): stop so the button works again.
+        else if (r.status === "none") { setAnalysing(false); }
       } catch {
         setAnalysing(false);
       }

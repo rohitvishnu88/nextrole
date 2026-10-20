@@ -29,9 +29,9 @@ def _resume_file(slug: str) -> Path:
     return Path(base) / slug / "resume_data.json"
 
 
-def _fetch_job_text(url: str) -> str:
+def _fetch_job_text_with_source(url: str):
     import tailor_agent
-    return tailor_agent.fetch_job_description(url)
+    return tailor_agent.fetch_job_description_with_source(url)
 
 
 def _make_client():
@@ -51,7 +51,11 @@ def _run_analysis(slug: str, job_id: str, url: str) -> None:
     _last_error.pop(key, None)
     try:
         resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
-        analysis = job_analysis.get_or_create_analysis(_make_client(), slug, resume, _fetch_job_text(url), source_url=url)
+        jd_text, source = _fetch_job_text_with_source(url)
+        if source == "search":
+            raise job_analysis.JobTextTooShort(
+                "Only a search snippet was found for this job, not the full ad. Tailor it with the ad text pasted instead.")
+        analysis = job_analysis.get_or_create_analysis(_make_client(), slug, resume, jd_text, source_url=url)
         store = job_store.load_store(slug)
         job_store.set_analysis(store, job_id, analysis["analysis_id"])
         job_store.save_store(slug, store)

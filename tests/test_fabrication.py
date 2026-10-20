@@ -62,3 +62,14 @@ def test_title_change_flagged_as_identity():
 
 def test_missing_sections_do_not_crash():
     assert find_fabrications({"name": "A"}, {"name": "A", "experience": []}) == []
+
+
+def test_designation_and_highlight_are_checked():
+    base = dict(BASE, designation="Data Integration Architect")
+    base["experience"] = [dict(BASE["experience"][0], highlight="UK bank data platform")]
+    tailored = copy.deepcopy(base)
+    tailored["designation"] = "Head of Data Architecture"
+    tailored["experience"][0]["highlight"] = "UK bank data platform serving 12m customers"
+    flags = find_fabrications(base, tailored)
+    assert {"location": "designation", "kind": "identity", "text": "designation: Head of Data Architecture"} in flags
+    assert {"location": "experience[0].highlight", "kind": "number", "text": "12m"} in flags
