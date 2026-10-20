@@ -3,6 +3,8 @@ import sys
 import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
 
 import pytest
@@ -19,6 +21,7 @@ def client(tmp_path):
 
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     client = TestClient(app)
 
     # Seed a completed job with real temp files

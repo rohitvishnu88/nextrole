@@ -7,7 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from a2a.auth import User, current_user
+from a2a.ownership import require_profile
+
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -54,12 +57,13 @@ class UpdateRequest(BaseModel):
 
 
 @router.post("")
-async def start_tailor(body: TailorRequest):
+async def start_tailor(body: TailorRequest, user: User = Depends(current_user)):
+    require_profile(body.profile_slug, user)
     if not body.url and not body.jd_text:
         raise HTTPException(status_code=400, detail="Provide either 'url' or 'jd_text'")
 
     job_id = str(uuid.uuid4())
-    _jobs[job_id] = {"status": "running", "message": "Starting...", "profile_slug": body.profile_slug}
+    _jobs[job_id] = {"status": "running", "message": "Starting...", "profile_slug": body.profile_slug, "user_id": user.id}
 
     async def _run():
         import sys
@@ -112,7 +116,8 @@ def _recheck_fit(job: dict) -> Optional[dict]:
 
 
 @router.get("/history/{profile_slug}")
-def list_tailor_history(profile_slug: str):
+def list_tailor_history(profile_slug: str, user: User = Depends(current_user)):
+    require_profile(profile_slug, user)
     """List every past tailoring run for a profile by scanning the output
     directory directly - the in-memory `_jobs` dict above only holds jobs
     from the current server process and is lost on restart, but the actual
@@ -155,7 +160,8 @@ def list_tailor_history(profile_slug: str):
 
 
 @router.get("/history/{profile_slug}/{entry_id}/pdf")
-def download_history_pdf(profile_slug: str, entry_id: str):
+def download_history_pdf(profile_slug: str, entry_id: str, user: User = Depends(current_user)):
+    require_profile(profile_slug, user)
     _require_valid_profile_slug(profile_slug)
     _require_valid_entry_id(entry_id)
     path = ROOT / "output" / "profiles" / profile_slug / "resumes" / f"resume_{entry_id}.pdf"
@@ -165,7 +171,8 @@ def download_history_pdf(profile_slug: str, entry_id: str):
 
 
 @router.get("/history/{profile_slug}/{entry_id}/cover-letter")
-def download_history_cover_letter(profile_slug: str, entry_id: str):
+def download_history_cover_letter(profile_slug: str, entry_id: str, user: User = Depends(current_user)):
+    require_profile(profile_slug, user)
     _require_valid_profile_slug(profile_slug)
     _require_valid_entry_id(entry_id)
     path = ROOT / "output" / "profiles" / profile_slug / "cover_letters" / f"cover_letter_{entry_id}.txt"
@@ -174,9 +181,18 @@ def download_history_cover_letter(profile_slug: str, entry_id: str):
     return FileResponse(path, media_type="text/plain", filename=path.name)
 
 
-@router.get("/{job_id}")
-def get_tailor_status(job_id: str):
+def _owned_job(job_id: str, user: User) -> Optional[dict]:
+    """The job if this user started it, else None (so callers answer 404)."""
     job = _jobs.get(job_id)
+    if not job:
+        return None
+    owner = job.get("user_id")
+    return job if (owner == user.id if owner else user.is_owner) else None
+
+
+@router.get("/{job_id}")
+def get_tailor_status(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return {
@@ -191,8 +207,8 @@ def get_tailor_status(job_id: str):
 
 
 @router.get("/{job_id}/data")
-def get_tailor_data(job_id: str):
-    job = _jobs.get(job_id)
+def get_tailor_data(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="Job not found or not completed")
     json_path = Path(job["json_file"])
@@ -203,8 +219,8 @@ def get_tailor_data(job_id: str):
 
 
 @router.get("/{job_id}/cover-letter-text")
-def get_cover_letter_text(job_id: str):
-    job = _jobs.get(job_id)
+def get_cover_letter_text(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="Job not found or not completed")
     path = Path(job["cover_letter_file"])
@@ -214,8 +230,8 @@ def get_cover_letter_text(job_id: str):
 
 
 @router.patch("/{job_id}/data")
-def update_tailor_data(job_id: str, body: UpdateRequest):
-    job = _jobs.get(job_id)
+def update_tailor_data(job_id: str, body: UpdateRequest, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="Job not found or not completed")
 
@@ -235,8 +251,8 @@ def update_tailor_data(job_id: str, body: UpdateRequest):
 
 
 @router.get("/{job_id}/fit")
-def get_tailor_fit(job_id: str):
-    job = _jobs.get(job_id)
+def get_tailor_fit(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="Job not found or not completed")
     fit_file = job.get("fit_file")
@@ -252,8 +268,8 @@ def get_tailor_fit(job_id: str):
 
 
 @router.get("/{job_id}/pdf")
-def download_pdf(job_id: str):
-    job = _jobs.get(job_id)
+def download_pdf(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="PDF not ready")
     path = Path(job["pdf_file"])
@@ -263,8 +279,8 @@ def download_pdf(job_id: str):
 
 
 @router.get("/{job_id}/cover-letter")
-def download_cover_letter(job_id: str):
-    job = _jobs.get(job_id)
+def download_cover_letter(job_id: str, user: User = Depends(current_user)):
+    job = _owned_job(job_id, user)
     if not job or job["status"] != "completed":
         raise HTTPException(status_code=404, detail="Cover letter not ready")
     path = Path(job["cover_letter_file"])

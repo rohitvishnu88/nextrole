@@ -4,7 +4,10 @@ import sys
 import threading
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from a2a.auth import User, current_user
+from a2a.ownership import require_profile
+
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
 import job_analysis
@@ -66,7 +69,8 @@ def _run_analysis(slug: str, job_id: str, url: str) -> None:
 
 
 @router.post("/{slug}/job-search/{job_id}/analyse")
-def start_job_analysis(slug: str, job_id: str, background_tasks: BackgroundTasks):
+def start_job_analysis(slug: str, job_id: str, background_tasks: BackgroundTasks, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     job = _find_job(slug, job_id)
     with _running_lock:
@@ -78,7 +82,8 @@ def start_job_analysis(slug: str, job_id: str, background_tasks: BackgroundTasks
 
 
 @router.get("/{slug}/job-search/{job_id}/analysis")
-def get_job_analysis(slug: str, job_id: str):
+def get_job_analysis(slug: str, job_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     if (slug, job_id) in _running:
         return {"status": "analysing"}

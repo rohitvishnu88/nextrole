@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
 
 import pytest
@@ -17,9 +19,12 @@ def client(tmp_path, monkeypatch):
     import a2a.routes.tailor_api as mod
     importlib.reload(mod)
     monkeypatch.setattr(mod, "ROOT", tmp_path)
+    monkeypatch.setenv("PROFILES_DIR", str(tmp_path / "profiles"))
+    (tmp_path / "profiles" / "rohit").mkdir(parents=True)
 
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app), tmp_path
 
 

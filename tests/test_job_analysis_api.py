@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
 
 import pytest
@@ -49,6 +51,7 @@ def setup(tmp_path, monkeypatch):
 
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app), mod, job_id, calls
 
 

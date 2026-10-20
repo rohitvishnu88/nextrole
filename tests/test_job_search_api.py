@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 
 import pytest
 from fastapi import FastAPI
@@ -24,11 +26,12 @@ def client(dirs, monkeypatch):
     import importlib
     import a2a.routes.job_search as mod
     importlib.reload(mod)
-    monkeypatch.setattr(mod.job_search_agent, "run", lambda resume, profile_slug="": {
+    monkeypatch.setattr(mod.job_search_agent, "run", lambda resume, profile_slug="", send_email=True: {
         "generated_at": "2026-07-17T00:00:00", "jobs": [],
     })
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app), mod
 
 

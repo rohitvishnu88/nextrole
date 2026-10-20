@@ -160,7 +160,7 @@ def send_email(jobs: list[dict], candidate_name: str) -> None:
     print(f"  ✅ Email sent to {gmail_user}")
 
 
-def run(resume: dict, include_seen: bool = False, profile_slug: str = "") -> dict:
+def run(resume: dict, include_seen: bool = False, profile_slug: str = "", send_email: bool = True) -> dict:
     anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     tavily_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
 
@@ -392,7 +392,7 @@ Return ONLY a JSON array, no other text:
     newly_added_ids = set(store.get("jobs", {}).keys()) - ids_before
     freshly_new_jobs = [store["jobs"][jid] for jid in newly_added_ids]
 
-    if freshly_new_jobs:
+    if freshly_new_jobs and send_email:
         candidate_name = resume.get("name", "Candidate")
         print(f"  Sending email for {len(freshly_new_jobs)} new job(s)...")
         try:

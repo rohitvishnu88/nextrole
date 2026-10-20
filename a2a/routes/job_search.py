@@ -4,7 +4,10 @@ import sys
 import threading
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from a2a.auth import User, current_user
+from a2a.ownership import require_profile
+
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
 import job_store
@@ -34,11 +37,11 @@ def _resume_file(slug: str) -> Path:
     return _profiles_dir() / slug / "resume_data.json"
 
 
-def _run_search(slug: str) -> None:
+def _run_search(slug: str, send_email: bool = False) -> None:
     _last_error.pop(slug, None)
     try:
         resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
-        job_search_agent.run(resume, profile_slug=slug)
+        job_search_agent.run(resume, profile_slug=slug, send_email=send_email)
     except Exception as e:
         _last_error[slug] = str(e)
     finally:
@@ -46,7 +49,8 @@ def _run_search(slug: str) -> None:
 
 
 @router.post("/{slug}/job-search")
-def start_job_search(slug: str, background_tasks: BackgroundTasks):
+def start_job_search(slug: str, background_tasks: BackgroundTasks, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     if not _resume_file(slug).exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
@@ -54,12 +58,14 @@ def start_job_search(slug: str, background_tasks: BackgroundTasks):
         if slug in _running:
             raise HTTPException(status_code=409, detail="A search is already running for this profile")
         _running.add(slug)
-    background_tasks.add_task(_run_search, slug)
+    # The results email goes to the owner's inbox, so only the owner's own searches send it.
+    background_tasks.add_task(_run_search, slug, user.is_owner)
     return {"status": "searching"}
 
 
 @router.get("/{slug}/job-search")
-def get_job_search(slug: str):
+def get_job_search(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     if slug in _running:
         return {"status": "searching"}
@@ -75,7 +81,8 @@ def get_job_search(slug: str):
 
 
 @router.post("/{slug}/job-search/{job_id}/apply")
-def apply_to_job(slug: str, job_id: str):
+def apply_to_job(slug: str, job_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     store = job_store.load_store(slug)
     if not job_store.mark_status(store, job_id, "applied"):
@@ -85,7 +92,8 @@ def apply_to_job(slug: str, job_id: str):
 
 
 @router.post("/{slug}/job-search/{job_id}/dismiss")
-def dismiss_job(slug: str, job_id: str):
+def dismiss_job(slug: str, job_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     store = job_store.load_store(slug)
     if not job_store.mark_status(store, job_id, "dismissed"):

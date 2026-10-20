@@ -1,6 +1,8 @@
 import sys, os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 
 import pytest
 
@@ -9,6 +11,8 @@ import pytest
 def tmp_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test_applications.db"
     monkeypatch.setenv("APPLICATIONS_DB", str(db_path))
+    monkeypatch.setenv("PROFILES_DIR", str(tmp_path / "profiles"))
+    (tmp_path / "profiles" / "rohit").mkdir(parents=True)
     import importlib
     import a2a.db as db_module
     importlib.reload(db_module)
@@ -67,6 +71,7 @@ def api_client(tmp_db):
     importlib.reload(mod)
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app)
 
 

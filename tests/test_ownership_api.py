@@ -99,3 +99,76 @@ def test_assign_unowned_to_owner(profiles_dir):
     meta = {p["slug"]: p for p in ownership.load_meta()}
     assert meta["legacy"]["owner_user_id"] == OWNER.id
     assert meta["friend"]["owner_user_id"] == FRIEND.id
+
+
+# --- job search, job analysis, tailor, applications ---
+
+def make_app_b(user, monkeypatch=None):
+    import a2a.routes.job_search as js
+    import a2a.routes.job_analysis as ja
+    import a2a.routes.tailor_api as ta
+    import a2a.routes.applications as ap
+    for m in (js, ja, ta, ap):
+        importlib.reload(m)
+    app = FastAPI()
+    for m in (js, ja, ta, ap):
+        app.include_router(m.router)
+    sign_in(app, user)
+    return TestClient(app), js, ja, ta, ap
+
+
+def test_other_users_job_search_and_analysis_404(profiles_dir, tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path / "out"))
+    c, *_ = make_app_b(FRIEND)
+    assert c.get("/api/profiles/other/job-search").status_code == 404
+    assert c.post("/api/profiles/other/job-search").status_code == 404
+    assert c.post("/api/profiles/other/job-search/abc/apply").status_code == 404
+    assert c.post("/api/profiles/other/job-search/abc/analyse").status_code == 404
+    assert c.get("/api/profiles/other/job-search/abc/analysis").status_code == 404
+
+
+def test_other_users_tailor_job_404(profiles_dir, tmp_path):
+    c, js, ja, ta, ap = make_app_b(FRIEND)
+    (tmp_path / "r.json").write_text("{}")
+    ta._jobs["job-b"] = {"status": "completed", "user_id": OTHER.id, "profile_slug": "other",
+                        "json_file": str(tmp_path / "r.json"), "pdf_file": str(tmp_path / "r.pdf"),
+                        "cover_letter_file": str(tmp_path / "c.txt")}
+    for path in ("/api/tailor/job-b", "/api/tailor/job-b/data", "/api/tailor/job-b/fit", "/api/tailor/job-b/pdf",
+                 "/api/tailor/job-b/cover-letter", "/api/tailor/job-b/cover-letter-text"):
+        assert c.get(path).status_code == 404, path
+    assert c.patch("/api/tailor/job-b/data", json={"resume": {}}).status_code == 404
+    assert c.post("/api/tailor", json={"profile_slug": "other", "jd_text": "x"}).status_code == 404
+    assert c.get("/api/tailor/history/other").status_code == 404
+
+
+def test_other_users_application_404_on_patch_delete_followup(profiles_dir):
+    owner_c, *_ = make_app_b(OTHER)
+    app_id = owner_c.post("/api/applications", json={
+        "profile_id": "other", "job_title": "Architect", "company": "Acme", "status": "saved"}).json()["id"]
+    c, *_ = make_app_b(FRIEND)
+    assert c.get("/api/applications?profile=other").status_code == 404
+    assert c.post("/api/applications", json={"profile_id": "other", "job_title": "x", "company": "y"}).status_code == 404
+    assert c.patch(f"/api/applications/{app_id}", json={"status": "applied"}).status_code == 404
+    assert c.post(f"/api/applications/{app_id}/followed-up").status_code == 404
+    assert c.delete(f"/api/applications/{app_id}").status_code == 404
+    assert owner_c.get("/api/applications?profile=other").json()[0]["status"] == "saved"
+
+
+@pytest.mark.parametrize("user,expected", [(FRIEND, False), (OWNER, True)])
+def test_only_owner_search_sends_email(profiles_dir, tmp_path, monkeypatch, user, expected):
+    monkeypatch.setenv("JOBS_OUTPUT_DIR", str(tmp_path / "out"))
+    c, js, *_ = make_app_b(user)
+    seen = {}
+    monkeypatch.setattr(js.job_search_agent, "run", lambda resume, profile_slug="", send_email=True: seen.update(send_email=send_email))
+    slug = "friend" if user is FRIEND else "legacy"
+    assert c.post(f"/api/profiles/{slug}/job-search").status_code == 200
+    assert seen == {"send_email": expected}
+
+
+def test_assign_profile_script_moves_profile(profiles_dir):
+    from a2a import db, ownership
+    from scripts import assign_profile
+    user = db.upsert_user("malini@example.com", "Malini", "", False)
+    assert assign_profile.main(["legacy", "malini@example.com"]) == 0
+    assert {p["slug"]: p for p in ownership.load_meta()}["legacy"]["owner_user_id"] == user["id"]
+    assert assign_profile.main(["legacy", "nobody@example.com"]) != 0
