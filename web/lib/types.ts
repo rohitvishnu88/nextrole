@@ -5,6 +5,26 @@ export interface Me {
   is_owner: boolean;
 }
 
+export type MeteredAction = "job_search" | "tailor" | "analyse" | "section_draft" | "resume_parse" | "search_brief";
+
+export interface UsageAction {
+  used: number;
+  limit: number | null;
+}
+
+export interface UsageMe {
+  month: string;
+  resets_on: string;
+  paused: boolean;
+  actions: Record<MeteredAction, UsageAction>;
+  owner?: {
+    spent_usd: number;
+    budget_usd: number;
+    by_user: { email: string; spent_usd: number; counts: Record<string, number> }[];
+    by_action: Record<string, number>;
+  };
+}
+
 export interface Profile {
   id: string;
   name: string;

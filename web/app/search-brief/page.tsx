@@ -7,6 +7,7 @@ import { SignalChip } from "@/components/SignalChip";
 import { QueryPreview } from "@/components/QueryPreview";
 import { PageCircle } from "@/components/ui/PageCircle";
 import { RefreshCw, Plus, Loader2 } from "lucide-react";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 const CATEGORY_META: Record<SignalCategory, { label: string; description: string }> = {
   roles:      { label: "Target Roles",   description: "Job titles the agent actively searches for" },
@@ -22,6 +23,7 @@ const CATEGORY_ORDER: SignalCategory[] = [
 ];
 
 export default function SearchBriefPage() {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const profile    = useActiveProfile();
   const [brief,    setBrief]    = useState<SearchBrief | null>(null);
   const [loading,  setLoading]  = useState(false);
@@ -114,13 +116,14 @@ export default function SearchBriefPage() {
           </p>
         </div>
         <button
-          onClick={handleGenerate}
-          disabled={generating}
+          onClick={async () => { await handleGenerate(); refreshUsage(); }}
+          disabled={generating || !!blockedReason("search_brief")}
           className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-4 py-2 text-sm font-bold transition-colors shrink-0 relative"
         >
           {generating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {brief ? "regenerate" : "generate from resume"}
         </button>
+        <LimitNote action="search_brief" />
       </div>
 
       {error && (

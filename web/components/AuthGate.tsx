@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import type { Me } from "@/lib/types";
 import { PageCircle } from "@/components/ui/PageCircle";
+import { UsageProvider } from "@/lib/useUsage";
 
 const MeContext = createContext<Me | null>(null);
 
@@ -54,7 +55,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (state.kind === "loading") return null;
 
   if (state.kind === "signed_in") {
-    return <MeContext.Provider value={state.me}>{children}</MeContext.Provider>;
+    return (
+      <MeContext.Provider value={state.me}>
+        <UsageProvider>{children}</UsageProvider>
+      </MeContext.Provider>
+    );
   }
 
   if (state.kind === "not_invited") {

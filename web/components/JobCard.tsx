@@ -9,6 +9,7 @@ import { VerdictSection } from "@/components/fit/VerdictSection";
 import { RequirementsTable } from "@/components/fit/RequirementsTable";
 import { AboutJob } from "@/components/fit/AboutJob";
 import { Square } from "@/components/fit/shared";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 const SOURCE_LABEL: Record<JobMatch["source"], string> = {
   linkedin: "LinkedIn",
@@ -27,6 +28,7 @@ export function JobCard({
   profile: string;
   onRemove: (id: string) => void;
 }) {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -168,22 +170,26 @@ export function JobCard({
           <ExternalLink size={14} /> view
         </a>
         {!analysis && (
+          <>
           <button
-            onClick={handleAnalyse}
-            disabled={analysing}
+            onClick={async () => { await handleAnalyse(); refreshUsage(); }}
+            disabled={analysing || !!blockedReason("analyse")}
             className="flex items-center gap-1.5 text-sm font-medium border-[1.5px] border-ink px-2.5 py-1 hover:bg-ink hover:text-paper transition-colors disabled:opacity-50"
           >
             {analysing ? <Loader2 size={14} className="animate-spin" /> : <ScanSearch size={14} />}
             {analysing ? "analysing…" : "analyse"}
           </button>
+          <LimitNote action="analyse" />
+          </>
         )}
         <button
-          onClick={handleTailor}
-          disabled={busy}
+          onClick={async () => { await handleTailor(); refreshUsage(); }}
+          disabled={busy || !!blockedReason("tailor")}
           className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink transition-colors disabled:opacity-50"
         >
           <Wand2 size={14} /> tailor
         </button>
+        <LimitNote action="tailor" />
         <button
           onClick={handleApply}
           disabled={busy}

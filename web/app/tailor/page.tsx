@@ -11,8 +11,10 @@ import { RequirementsTable } from "@/components/fit/RequirementsTable";
 import { ChangesList } from "@/components/fit/ChangesList";
 import { AtsView } from "@/components/fit/AtsView";
 import { AboutJob, LeftOff } from "@/components/fit/AboutJob";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 function TailorPageInner() {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const profile = useActiveProfile();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<"url" | "jd">("url");
@@ -126,13 +128,15 @@ function TailorPageInner() {
         {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
 
         <button
-          onClick={handleSubmit}
-          disabled={!input.trim() || !profile || polling}
+          onClick={async () => { await handleSubmit(); refreshUsage(); }}
+          disabled={!input.trim() || !profile || polling || !!blockedReason("tailor")}
           className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
         >
           <Wand2 size={15} />
           {polling ? "Working…" : "Tailor Resume"}
         </button>
+
+        <LimitNote action="tailor" />
       </div>
 
       {job && (

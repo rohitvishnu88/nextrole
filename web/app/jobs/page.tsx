@@ -5,8 +5,10 @@ import type { JobMatch } from "@/lib/types";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { JobCard } from "@/components/JobCard";
 import { Search, Loader2 } from "lucide-react";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 export default function JobsPage() {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const profile = useActiveProfile();
   const [jobs, setJobs] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,13 +81,14 @@ export default function JobsPage() {
           <p className="text-sm text-ink-muted mt-3">{jobs.length} match{jobs.length !== 1 ? "es" : ""}</p>
         </div>
         <button
-          onClick={handleSearch}
-          disabled={searching || !profile}
+          onClick={async () => { await handleSearch(); refreshUsage(); }}
+          disabled={searching || !profile || !!blockedReason("job_search")}
           className="flex items-center gap-1.5 bg-ink hover:bg-ink/80 text-paper px-4 py-2 text-sm font-bold transition-colors disabled:opacity-50"
         >
           {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
           {searching ? "Searching..." : "Search now"}
         </button>
+        <LimitNote action="job_search" />
       </div>
 
       {!profile && (

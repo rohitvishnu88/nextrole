@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 interface Props {
   placeholder: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function SectionInstructionBox({ placeholder, submitLabel, onSubmit, onCancel }: Props) {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,12 +46,13 @@ export function SectionInstructionBox({ placeholder, submitLabel, onSubmit, onCa
           cancel
         </button>
         <button
-          onClick={handleSubmit}
-          disabled={loading || !instruction.trim()}
+          onClick={async () => { await handleSubmit(); refreshUsage(); }}
+          disabled={loading || !instruction.trim() || !!blockedReason("section_draft")}
           className="text-xs bg-ink text-paper px-3 py-1.5 disabled:opacity-50 hover:bg-ink/80"
         >
           {loading ? "Drafting..." : submitLabel}
         </button>
+        <LimitNote action="section_draft" />
       </div>
     </div>
   );

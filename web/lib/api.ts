@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry, TailorFit, JobAnalysisStatus, Me } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry, TailorFit, JobAnalysisStatus, Me, UsageMe } from "./types";
 
 const BASE = "/api";
 
@@ -10,6 +10,12 @@ export class ApiError extends Error {
 
 function errorMessage(detail: unknown, fallback: string): string {
   if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "code" in detail && "resets_on" in detail) {
+    const { code, resets_on } = detail as { code: string; resets_on: string };
+    const resets = new Date(`${resets_on}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+    if (code === "limit_reached") return `limit reached — resets ${resets}`;
+    if (code === "budget_reached") return `AI features paused until ${resets}`;
+  }
   if (detail && typeof detail === "object" && "message" in detail) return String((detail as { message: unknown }).message);
   return fallback;
 }
@@ -28,8 +34,9 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-// Auth
+// Auth and usage
 export const getMe = () => req<Me>("/auth/me");
+export const getUsageMe = () => req<UsageMe>("/usage/me");
 export const logout = () => req<{ ok: boolean }>("/auth/logout", { method: "POST" });
 
 // Profiles

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Upload, Check } from "lucide-react";
 import * as api from "@/lib/api";
+import { LimitNote, useUsage } from "@/lib/useUsage";
 
 interface Props {
   slug: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ReplaceResumeModal({ slug, onClose, onReplaced }: Props) {
+  const { blockedReason, refresh: refreshUsage } = useUsage();
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
   const [step, setStep] = useState<"form" | "preview" | "done">("form");
@@ -70,12 +72,13 @@ export function ReplaceResumeModal({ slug, onClose, onReplaced }: Props) {
             </div>
             {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
             <button
-              onClick={handleParse}
-              disabled={!file || loading}
+              onClick={async () => { await handleParse(); refreshUsage(); }}
+              disabled={!file || loading || !!blockedReason("resume_parse")}
               className="w-full bg-ink text-paper py-2 text-sm font-medium disabled:opacity-50 hover:bg-ink/80 transition-colors"
             >
               {loading ? "Parsing..." : "Parse Resume"}
             </button>
+            <LimitNote action="resume_parse" />
           </div>
         )}
 
