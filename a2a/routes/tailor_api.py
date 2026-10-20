@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from a2a.auth import User, current_user
 from a2a.ownership import require_profile
 from a2a import metering
+from core.url_safety import UnsafeURL, validate_public_url
 
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -62,6 +63,11 @@ async def start_tailor(body: TailorRequest, user: User = Depends(current_user)):
     require_profile(body.profile_slug, user)
     if not body.url and not body.jd_text:
         raise HTTPException(status_code=400, detail="Provide either 'url' or 'jd_text'")
+    if body.url:
+        try:
+            validate_public_url(body.url)
+        except UnsafeURL as e:
+            raise HTTPException(status_code=400, detail={"code": "unsafe_url", "message": str(e)})
 
     reservation_id = metering.start(user, "tailor")
     job_id = str(uuid.uuid4())

@@ -19,6 +19,7 @@ from tavily import TavilyClient
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 from core.ai_clients import make_anthropic, make_tavily
+from core.url_safety import UnsafeURL, validate_public_url
 sys.path.insert(0, str(ROOT / "core"))
 from config import MODEL as DEFAULT_MODEL, HUMANISE_RULES, extract_json_object
 import resume_builder as _resume_builder
@@ -46,6 +47,7 @@ def load_resume(profile_slug: str = "") -> dict:
 def fetch_job_description_with_source(url: str) -> Tuple[str, str]:
     """Return (text, source). source is "page" for the ad itself, "search" for the
     search-snippet fallback (often a different page), or "" when nothing was found."""
+    validate_public_url(url)
     print(f"  Fetching job description from: {url[:70]}...")
 
     if "linkedin.com/jobs" in url:
@@ -78,6 +80,17 @@ def fetch_job_description(url: str) -> str:
     return fetch_job_description_with_source(url)[0]
 
 
+def _guard_route(route) -> None:
+    """Playwright route handler: every request the page makes, redirects included,
+    must go to a public address."""
+    try:
+        validate_public_url(route.request.url)
+    except UnsafeURL:
+        route.abort()
+        return
+    route.continue_()
+
+
 def _fetch_with_playwright(url: str) -> str:
     try:
         from playwright.sync_api import sync_playwright
@@ -93,6 +106,7 @@ def _fetch_with_playwright(url: str) -> str:
                     "Chrome/122.0.0.0 Safari/537.36"
                 )
             )
+            context.route("**/*", _guard_route)
             page = context.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_timeout(2000)
