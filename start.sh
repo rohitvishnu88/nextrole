@@ -1,36 +1,42 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Starts the resume-builder backend (FastAPI, :8000) and frontend (Next.js, :3000).
+# Kills anything already bound to those ports first so there's never a stale instance.
+set -euo pipefail
 
-# Resume Builder — start both servers
-# Usage: ./start.sh
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check Python
-if ! command -v python3 &>/dev/null; then
-  echo "❌ python3 not found. Install Python 3.9+ and try again."
-  exit 1
-fi
+kill_port() {
+  local port="$1"
+  local pids
+  pids="$(lsof -ti ":$port" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    echo "Killing existing process(es) on port $port: $pids"
+    kill -9 $pids 2>/dev/null || true
+  fi
+}
 
-# Check Node
-if ! command -v node &>/dev/null; then
-  echo "❌ node not found. Install Node.js 18+ and try again."
-  exit 1
-fi
+kill_port 8000
+kill_port 3000
 
-# Check API key
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "❌ ANTHROPIC_API_KEY is not set. Export it and try again."
-  exit 1
-fi
+cleanup() {
+  echo
+  echo "Shutting down..."
+  kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
+  wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
 
-echo "Starting Resume Builder..."
-echo "  Backend → http://localhost:8000"
-echo "  Frontend → http://localhost:3000"
-echo "  Press Ctrl+C to stop both."
-echo ""
+echo "Starting backend on :8000..."
+(cd "$ROOT_DIR" && python3 -m uvicorn a2a.server:app --port 8000 --reload) &
+BACKEND_PID=$!
 
-# Trap Ctrl+C and kill both processes
-trap 'kill 0' SIGINT SIGTERM
+echo "Starting frontend on :3000..."
+(cd "$ROOT_DIR/web" && npm run dev) &
+FRONTEND_PID=$!
 
-python3 -m uvicorn a2a.server:app --port 8000 &
-cd web && npm run dev &
+echo
+echo "Backend:  http://localhost:8000/docs"
+echo "Frontend: http://localhost:3000"
+echo "Press Ctrl+C to stop both."
 
-wait
+wait "$BACKEND_PID" "$FRONTEND_PID"
