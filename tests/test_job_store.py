@@ -550,3 +550,31 @@ def test_build_feedback_summary_sorts_by_actual_timestamp_not_insertion_order():
     assert "Newer Role" in summary
     assert "Middle Role" in summary
     assert "Older Role" not in summary
+
+
+def test_merge_job_stores_triage_fields():
+    store = {"jobs": {}}
+    job_store.merge_job(store, {
+        "url": "https://jobs.lever.co/a/1", "source": "lever", "title": "Architect", "company": "Acme",
+        "red_flags": ["no visa sponsorship"], "text_basis": "full",
+    }, "2026-10-20T00:00:00")
+    job = store["jobs"][job_store.make_job_id("https://jobs.lever.co/a/1")]
+    assert job["red_flags"] == ["no visa sponsorship"]
+    assert job["text_basis"] == "full"
+
+    job_store.merge_job(store, {
+        "url": "https://jobs.lever.co/a/1", "source": "lever", "title": "Architect", "company": "Acme",
+        "red_flags": [], "text_basis": "snippet",
+    }, "2026-10-21T00:00:00")
+    assert job["red_flags"] == []
+    assert job["text_basis"] == "snippet"
+
+
+def test_merge_job_defaults_triage_fields():
+    store = {"jobs": {}}
+    job_store.merge_job(store, {
+        "url": "https://jobs.lever.co/a/2", "source": "lever", "title": "Architect", "company": "Acme",
+    }, "2026-10-20T00:00:00")
+    job = store["jobs"][job_store.make_job_id("https://jobs.lever.co/a/2")]
+    assert job["red_flags"] == []
+    assert job["text_basis"] == "snippet"

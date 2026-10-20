@@ -105,6 +105,8 @@ def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
             "url": candidate["url"],
             "relevance_score": candidate.get("relevance_score", 0),
             "match_reason": candidate.get("match_reason", ""),
+            "red_flags": candidate.get("red_flags") or [],
+            "text_basis": candidate.get("text_basis", "snippet"),
             "status": "new",
             "first_seen_at": now_iso,
             "last_seen_at": now_iso,
@@ -115,6 +117,8 @@ def merge_job(store: dict, candidate: dict, now_iso: str) -> None:
     if existing["status"] in ("new", "seen"):
         existing["relevance_score"] = candidate.get("relevance_score", existing["relevance_score"])
         existing["match_reason"] = candidate.get("match_reason", existing["match_reason"])
+        existing["red_flags"] = candidate.get("red_flags") or []
+        existing["text_basis"] = candidate.get("text_basis", "snippet")
         existing["last_verified_at"] = now_iso
 
 

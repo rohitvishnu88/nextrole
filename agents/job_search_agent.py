@@ -244,7 +244,8 @@ Return ONLY a JSON array, no other text:
     "location": "Location",
     "url": "Job listing URL",
     "relevance_score": 8,
-    "match_reason": "One sentence on why this fits — mention specific matching skills or experience"
+    "match_reason": "One sentence on why this fits — mention specific matching skills or experience",
+    "red_flags": ["Explicit blockers stated in the text only, e.g. no visa sponsorship, security clearance required, on-site in a non-UK location. Empty list if none."]
   }
 ]"""
 
@@ -279,6 +280,7 @@ Return ONLY a JSON array, no other text:
 
     search_count = 0
     page_read_count = 0
+    read_urls = set()
     iterations = 0
     max_iterations = MAX_SEARCHES + MAX_PAGE_READS + 10
 
@@ -351,6 +353,7 @@ Return ONLY a JSON array, no other text:
                     else:
                         page_read_count += 1
                         url = block.input["url"]
+                        read_urls.add(url)
                         print(f"  Reading full page ({page_read_count}/{MAX_PAGE_READS}): {url[:60]}...")
                         try:
                             result = tavily_client.extract(urls=[url])
@@ -374,6 +377,9 @@ Return ONLY a JSON array, no other text:
     now_iso = now.isoformat()
 
     ids_before = set(store.get("jobs", {}).keys())
+    # Decided in Python, not by the model: only pages the agent actually read count as "full".
+    for job in all_jobs:
+        job["text_basis"] = "full" if job.get("url") in read_urls else "snippet"
     job_store.process_search_results(
         all_jobs, store, now_iso,
         verify_open=lambda url: job_freshness.verify_open(url, tavily_client),
