@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry, TailorFit, JobAnalysisStatus } from "./types";
 
 const BASE = "/api";
 
@@ -81,7 +81,12 @@ export const createApplication = (data: {
   notes?: string;
   resume_file?: string;
   cover_letter_file?: string;
+  match_score?: number | null;
+  analysis_id?: string | null;
 }) => req<Application>("/applications", { method: "POST", body: JSON.stringify(data) });
+
+export const markFollowedUp = (id: string) =>
+  req<{ follow_up_date: string }>(`/applications/${id}/followed-up`, { method: "POST" });
 
 export const updateApplication = (id: string, fields: Partial<Application>) =>
   req<{ updated: boolean }>(`/applications/${id}`, {
@@ -113,10 +118,19 @@ export const patchTailorData = (
   resume: TailoredResume,
   coverLetter: string,
 ) =>
-  req<{ ok: boolean }>(`/tailor/${jobId}/data`, {
+  req<{ ok: boolean; fit: TailorFit | null }>(`/tailor/${jobId}/data`, {
     method: "PATCH",
     body: JSON.stringify({ resume, cover_letter: coverLetter }),
   });
+
+export const getTailorFit = (jobId: string) =>
+  req<TailorFit>(`/tailor/${jobId}/fit`);
+
+export const analyseJob = (slug: string, jobId: string) =>
+  req<{ status: "analysing" }>(`/profiles/${slug}/job-search/${jobId}/analyse`, { method: "POST" });
+
+export const getJobAnalysis = (slug: string, jobId: string) =>
+  req<JobAnalysisStatus>(`/profiles/${slug}/job-search/${jobId}/analysis`);
 
 export const getTailorHistory = (profileSlug: string) =>
   req<TailorHistoryEntry[]>(`/tailor/history/${profileSlug}`);

@@ -26,6 +26,10 @@ export interface Application {
   cover_letter_file: string | null;
   created_at: string;
   updated_at: string;
+  follow_up_date: string | null;
+  match_score: number | null;
+  analysis_id: string | null;
+  overdue: boolean;
 }
 
 export interface TailorJob {
@@ -96,6 +100,9 @@ export interface JobMatch {
   url: string;
   relevance_score: number;
   match_reason: string;
+  red_flags: string[];
+  text_basis: "full" | "snippet";
+  analysis_id?: string;
   status: JobStatus;
   first_seen_at: string;
   last_seen_at: string;
@@ -114,7 +121,75 @@ export interface TailorHistoryEntry {
   job_url: string;
   pdf_available: boolean;
   cover_letter_available: boolean;
+  match_score: number | null;
+  verdict: string | null;
 }
+
+export type FilterLikelihood = "high" | "medium" | "low" | "filler";
+export type Meets = "yes" | "partly" | "no";
+export type Verdict = "strong fit" | "genuine stretch" | "waste of time";
+
+export interface Requirement {
+  text: string;
+  filter_likelihood: FilterLikelihood;
+  why: string;
+  key_terms: string[];
+  meets: Meets;
+  evidence: string;
+  interview_answer: string;
+}
+
+export interface JobAnalysis {
+  analysis_id: string;
+  created_at: string;
+  what_it_really_is: string;
+  problem_being_solved: string;
+  search_terms: string[];
+  suspicious: string[];
+  requirements: Requirement[];
+  gaps_that_matter: string[];
+  gaps_that_dont: string[];
+  verdict: Verdict;
+  verdict_reason: string;
+  left_off: string[];
+  match_score: number | null;
+}
+
+export interface ChangeEntry {
+  location: string;
+  kind: "reordered" | "reworded" | "expanded" | "shrunk" | "summary" | "skills";
+  before: string;
+  after: string;
+  needs_confirmation: boolean;
+  reason: string;
+  stale?: boolean;
+}
+
+export interface FabricationFlag {
+  location: string;
+  kind: "number" | "skill" | "name" | "identity";
+  text: string;
+}
+
+export interface AtsResult {
+  contact: { email: boolean; phone: boolean };
+  headings: { summary: boolean; experience: boolean; skills: boolean; education: boolean };
+  terms: { term: string; present: boolean }[];
+  text: string;
+}
+
+export interface TailorFit {
+  analysis: JobAnalysis | null;
+  changes: ChangeEntry[];
+  fabrication_flags: FabricationFlag[];
+  ats: AtsResult;
+}
+
+export type JobAnalysisStatus =
+  | { status: "analysing" }
+  | { status: "none" }
+  | { status: "failed"; error: string }
+  | { status: "ready"; analysis: JobAnalysis };
 
 export interface ResumeVersionSummary {
   id: string;
