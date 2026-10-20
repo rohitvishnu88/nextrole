@@ -2,10 +2,15 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import * as api from "@/lib/api";
-import type { TailorJob, TailoredResume } from "@/lib/types";
+import type { TailorFit, TailorJob, TailoredResume } from "@/lib/types";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { AddApplicationModal } from "@/components/AddApplicationModal";
 import { Wand2, Download, Plus, Pencil } from "lucide-react";
+import { VerdictSection } from "@/components/fit/VerdictSection";
+import { RequirementsTable } from "@/components/fit/RequirementsTable";
+import { ChangesList } from "@/components/fit/ChangesList";
+import { AtsView } from "@/components/fit/AtsView";
+import { AboutJob, LeftOff } from "@/components/fit/AboutJob";
 
 function TailorPageInner() {
   const profile = useActiveProfile();
@@ -17,13 +22,16 @@ function TailorPageInner() {
   const [error, setError] = useState("");
   const [showAddToTracker, setShowAddToTracker] = useState(false);
   const [tailoredResume, setTailoredResume] = useState<TailoredResume | null>(null);
+  const [fit, setFit] = useState<TailorFit | null>(null);
 
   useEffect(() => {
     if (job?.status !== "completed") {
       setTailoredResume(null);
+      setFit(null);
       return;
     }
     api.getTailorData(job.job_id).then(setTailoredResume).catch(() => {});
+    api.getTailorFit(job.job_id).then(setFit).catch(() => {});
   }, [job?.status, job?.job_id]);
 
   // Restore a job when arriving via ?job= — either completed (redirect back from
@@ -69,7 +77,7 @@ function TailorPageInner() {
   }, [polling, job]);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-5xl font-bold text-ink leading-none">tailor a resume</h1>
         <p className="text-sm text-ink-muted mt-3">Paste a job URL or description — get a tailored PDF and cover letter</p>
@@ -195,6 +203,23 @@ function TailorPageInner() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {job?.status === "completed" && fit && (
+        <div className="space-y-10 pt-4">
+          {fit.analysis ? (
+            <VerdictSection analysis={fit.analysis} />
+          ) : (
+            <p className="text-sm border-l-[3px] border-red pl-3">
+              job analysis unavailable — the full ad couldn&apos;t be read.
+            </p>
+          )}
+          {fit.analysis && <RequirementsTable requirements={fit.analysis.requirements} />}
+          <ChangesList changes={fit.changes} flags={fit.fabrication_flags} />
+          {fit.analysis && <LeftOff items={fit.analysis.left_off} />}
+          <AtsView ats={fit.ats} />
+          {fit.analysis && <AboutJob analysis={fit.analysis} />}
         </div>
       )}
 
