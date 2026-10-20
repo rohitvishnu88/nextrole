@@ -78,6 +78,15 @@ The app is invite-only and uses Google sign-in. Set these before starting the ba
 | `PUBLIC_BASE_URL` | Where the app is served, e.g. `http://localhost:3000`. Add `{PUBLIC_BASE_URL}/api/auth/callback` as an authorised redirect URI on the OAuth client |
 | `OWNER_EMAIL` | Your Google email; the owner sees spend and has no per-user limits |
 | `ALLOWED_EMAILS` | Comma-separated emails of invited friends |
+| `A2A_TOKEN` | Shared secret for the A2A endpoint (`POST /`). Clients send `Authorization: Bearer <token>`. If unset, A2A refuses every request |
+
+**Usage limits.** Every AI action is metered against a per-person monthly allowance and an overall $50/month ceiling (all users, including the owner). Limits and prices live in `core/limits.py`; each person sees theirs on the **usage** page, and the owner also sees spend by person.
+
+**Giving an existing profile to a friend.** Profiles created before sign-in belong to the owner. Once the friend has signed in once:
+
+```bash
+python3 -m scripts.assign_profile <profile-slug> <their-google-email>
+```
 
 ### 3. Install dependencies
 
