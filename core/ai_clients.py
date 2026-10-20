@@ -5,6 +5,8 @@ thread that makes the calls: context variables don't follow work into executor t
 A call made with no reservation (CLI runs) is reserved as "cli" against the owner and
 refused once the monthly ceiling is reached.
 """
+import asyncio
+import contextvars
 import math
 import os
 from contextlib import contextmanager
@@ -33,6 +35,11 @@ def metered(reservation_id: str) -> Iterator[None]:
         yield
     finally:
         _current_reservation.reset(token)
+
+
+async def run_in_thread(fn: Callable):
+    """run_in_executor that carries the current reservation into the worker thread."""
+    return await asyncio.get_event_loop().run_in_executor(None, contextvars.copy_context().run, fn)
 
 
 def _run_metered(call: Callable, record: Callable[[str, object], None]):

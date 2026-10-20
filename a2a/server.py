@@ -13,8 +13,9 @@ Supported JSON-RPC methods:
 """
 from __future__ import annotations
 
+import hmac
 import json
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +43,7 @@ from .models import (
 )
 from .skills import tailor, job_search, linkedin
 from . import auth
+from core import ai_clients, usage
 from .routes import profiles, applications, tailor_api, search_brief, job_search as job_search_routes, resume_versions, job_analysis as job_analysis_routes
 
 app = FastAPI(
@@ -145,7 +147,23 @@ def _extract_text(params: TaskSendParams) -> str:
 # Task execution helpers
 # ---------------------------------------------------------------------------
 
-async def _run_task(params: TaskSendParams) -> Task:
+def _settle(reservation_id: Optional[str], task: Task) -> None:
+    if not reservation_id:
+        return
+    if task.status.state == TaskState.FAILED:
+        usage.release(reservation_id)
+    else:
+        usage.commit(reservation_id)
+
+
+async def _run_task(params: TaskSendParams, reservation_id: Optional[str] = None) -> Task:
+    with ai_clients.metered(reservation_id):
+        task = await _execute_task(params)
+    _settle(reservation_id, task)
+    return task
+
+
+async def _execute_task(params: TaskSendParams) -> Task:
     """Execute a task synchronously, collecting all events."""
     task = Task(
         id=params.id,
@@ -188,7 +206,18 @@ async def _run_task(params: TaskSendParams) -> Task:
 
 
 async def _stream_task(
-    rpc_id: Any, params: TaskSendParams
+    rpc_id: Any, params: TaskSendParams, reservation_id: Optional[str] = None
+) -> AsyncGenerator[dict, None]:
+    holder: dict = {}
+    with ai_clients.metered(reservation_id):
+        async for event in _stream_task_events(rpc_id, params, holder):
+            yield event
+    if "task" in holder:
+        _settle(reservation_id, holder["task"])
+
+
+async def _stream_task_events(
+    rpc_id: Any, params: TaskSendParams, holder: dict
 ) -> AsyncGenerator[dict, None]:
     """Execute a task and yield SSE events as it progresses."""
     task = Task(
@@ -197,6 +226,7 @@ async def _stream_task(
         status=TaskStatus(state=TaskState.SUBMITTED),
         messages=[params.message],
     )
+    holder["task"] = task
     task_store.save(task)
 
     skill_id = _get_skill_id(params)
@@ -252,8 +282,35 @@ async def _stream_task(
 # JSON-RPC dispatcher
 # ---------------------------------------------------------------------------
 
+# A2A clients can't do Google sign-in, so they use a shared token and act as the owner.
+A2A_ACTIONS = {"tailor_resume": "tailor", "search_jobs": "job_search", "analyse_linkedin": "cli"}
+
+
+def _a2a_authorised(request: Request) -> bool:
+    expected = _os.environ.get("A2A_TOKEN", "")
+    supplied = request.headers.get("authorization", "")
+    if not expected or not supplied.startswith("Bearer "):
+        return False
+    return hmac.compare_digest(supplied[len("Bearer "):].encode(), expected.encode())
+
+
+def _reserve_for_owner(rpc_id, params: TaskSendParams):
+    """Returns (reservation_id, None), or (None, error response) when a limit is hit."""
+    from . import db
+    owner = db.get_user_by_email(auth.owner_email()) if auth.owner_email() else None
+    action = A2A_ACTIONS.get(_get_skill_id(params), "cli")
+    try:
+        return usage.reserve(owner["id"] if owner else None, action, is_owner=True), None
+    except usage.LimitReached as e:
+        error = make_error(rpc_id, -32029, f"Usage limit: {e.code}").model_dump()
+        error["error"]["data"] = {"code": e.code, "action": e.action, "resets_on": e.resets_on}
+        return None, JSONResponse(error)
+
+
 @app.post("/")
 async def handle_rpc(request: Request):
+    if not _a2a_authorised(request):
+        return JSONResponse({"detail": "A2A requires Authorization: Bearer <A2A_TOKEN>"}, status_code=401)
     try:
         body = await request.json()
     except Exception:
@@ -280,7 +337,10 @@ async def handle_rpc(request: Request):
             return JSONResponse(
                 make_error(rpc.id, ErrorCode.INVALID_PARAMS, str(e)).model_dump()
             )
-        task = await _run_task(params)
+        reservation_id, refused = _reserve_for_owner(rpc.id, params)
+        if refused:
+            return refused
+        task = await _run_task(params, reservation_id)
         return JSONResponse(
             JSONRPCResponse(id=rpc.id, result=task.model_dump()).model_dump()
         )
@@ -293,7 +353,10 @@ async def handle_rpc(request: Request):
             return JSONResponse(
                 make_error(rpc.id, ErrorCode.INVALID_PARAMS, str(e)).model_dump()
             )
-        return EventSourceResponse(_stream_task(rpc.id, params))
+        reservation_id, refused = _reserve_for_owner(rpc.id, params)
+        if refused:
+            return refused
+        return EventSourceResponse(_stream_task(rpc.id, params, reservation_id))
 
     # tasks/get — retrieve stored task
     elif method == "tasks/get":

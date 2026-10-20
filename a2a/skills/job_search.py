@@ -18,6 +18,7 @@ import job_search_agent
 ROOT = Path(__file__).parent.parent.parent
 RESUME_FILE = ROOT / "data" / "resume_data.json"
 
+from core import ai_clients
 from ..models import (
     Artifact,
     DataPart,
@@ -57,9 +58,7 @@ async def handle(task_id: str, message_text: str) -> AsyncGenerator[TaskEvent, N
     )
 
     loop = get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        lambda: job_search_agent.run(resume, include_seen=False),
+    result = await ai_clients.run_in_thread(lambda: job_search_agent.run(resume, include_seen=False),
     )
 
     jobs = result.get("jobs", [])

@@ -20,6 +20,7 @@ from typing import AsyncGenerator, Union
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
 import tailor_agent
 
+from core import ai_clients
 from ..models import (
     Artifact,
     FilePart,
@@ -80,9 +81,7 @@ async def handle(task_id: str, message_text: str) -> AsyncGenerator[TaskEvent, N
     )
 
     loop = get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        lambda: tailor_agent.run(job_url=job_url, jd_text=jd_text),
+    result = await ai_clients.run_in_thread(lambda: tailor_agent.run(job_url=job_url, jd_text=jd_text),
     )
 
     if result.get("status") != "completed":

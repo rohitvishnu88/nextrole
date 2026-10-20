@@ -18,6 +18,7 @@ import linkedin_agent
 ROOT = Path(__file__).parent.parent.parent
 RESUME_FILE = ROOT / "data" / "resume_data.json"
 
+from core import ai_clients
 from ..models import (
     Artifact,
     TaskState,
@@ -56,7 +57,7 @@ async def handle(task_id: str, message_text: str) -> AsyncGenerator[TaskEvent, N
     )
 
     loop = get_event_loop()
-    result = await loop.run_in_executor(None, lambda: linkedin_agent.run(resume))
+    result = await ai_clients.run_in_thread(lambda: linkedin_agent.run(resume))
 
     if result.get("status") == "skipped":
         yield TaskStatusUpdateEvent(
