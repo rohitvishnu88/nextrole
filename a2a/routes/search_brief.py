@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
+
+from a2a.auth import User, current_user
+from a2a.ownership import require_profile
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/profiles", tags=["search-brief"])
@@ -40,7 +43,8 @@ def _save_brief(slug: str, brief: dict) -> None:
 
 
 @router.get("/{slug}/search-brief")
-def get_search_brief(slug: str):
+def get_search_brief(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     return _load_brief(slug)
 
 
@@ -109,7 +113,8 @@ RESUME:
 
 
 @router.post("/{slug}/search-brief/generate")
-def generate_search_brief(slug: str, background_tasks: BackgroundTasks):
+def generate_search_brief(slug: str, background_tasks: BackgroundTasks, user: User = Depends(current_user)):
+    require_profile(slug, user)
     resume_file = _resume_file(slug)
     if not resume_file.exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
@@ -132,7 +137,8 @@ class SignalPatch(BaseModel):
 
 
 @router.patch("/{slug}/search-brief/signals/{signal_id}")
-def patch_signal(slug: str, signal_id: str, body: SignalPatch):
+def patch_signal(slug: str, signal_id: str, body: SignalPatch, user: User = Depends(current_user)):
+    require_profile(slug, user)
     brief = _load_brief(slug)
     signal = next((s for s in brief["signals"] if s["id"] == signal_id), None)
     if not signal:
@@ -154,7 +160,8 @@ class SignalCreate(BaseModel):
 
 
 @router.post("/{slug}/search-brief/signals")
-def add_signal(slug: str, body: SignalCreate):
+def add_signal(slug: str, body: SignalCreate, user: User = Depends(current_user)):
+    require_profile(slug, user)
     if body.category not in CATEGORIES:
         raise HTTPException(status_code=400, detail=f"category must be one of: {CATEGORIES}")
     brief = _load_brief(slug)
@@ -172,7 +179,8 @@ def add_signal(slug: str, body: SignalCreate):
 
 
 @router.delete("/{slug}/search-brief/signals/{signal_id}")
-def delete_signal(slug: str, signal_id: str):
+def delete_signal(slug: str, signal_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     brief = _load_brief(slug)
     original_len = len(brief["signals"])
     brief["signals"] = [s for s in brief["signals"] if s["id"] != signal_id]

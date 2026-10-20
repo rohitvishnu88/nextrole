@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 
 import pytest
 from fastapi import FastAPI
@@ -33,6 +35,7 @@ def client(profiles_dir):
     importlib.reload(mod)
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app)
 
 
@@ -248,6 +251,7 @@ def test_apply_edit_grouped_list_different_group_empties_original(profiles_dir, 
     from fastapi.testclient import TestClient
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     client = TestClient(app)
 
     resp = client.post(
@@ -501,6 +505,12 @@ def test_resume_versions_router_mounted_on_main_app(profiles_dir):
     from a2a.server import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
-    resp = client.get("/api/profiles/nonexistent-profile/resume/history")
-    assert resp.status_code == 200
-    assert resp.json() == []
+    # Mounted and protected: unauthenticated requests reach the route's auth check.
+    assert client.get("/api/profiles/nonexistent-profile/resume/history").status_code == 401
+    sign_in(app, OWNER)
+    try:
+        resp = client.get("/api/profiles/nonexistent-profile/resume/history")
+    finally:
+        app.dependency_overrides.clear()
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Profile not found"

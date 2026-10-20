@@ -96,3 +96,16 @@ def test_owner_flag_from_owner_email(client, monkeypatch):
     me = c.get("/api/auth/me").json()
     assert me["is_owner"] is True
     assert me["email"] == "owner@example.com"
+
+
+def test_owner_sign_in_claims_unowned_profiles(client, monkeypatch, tmp_path):
+    import json
+    c, db, auth = client
+    pdir = tmp_path / "profiles"
+    pdir.mkdir()
+    (pdir / "profiles.json").write_text(json.dumps([{"id": "1", "name": "Rohit", "slug": "rohit", "created_at": "t"}]))
+    monkeypatch.setenv("PROFILES_DIR", str(pdir))
+    google_returns(monkeypatch, auth, "owner@example.com")
+    c.get("/api/auth/callback")
+    owner_id = db.get_user_by_email("owner@example.com")["id"]
+    assert json.loads((pdir / "profiles.json").read_text())[0]["owner_user_id"] == owner_id

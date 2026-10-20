@@ -73,6 +73,14 @@ app.add_middleware(
     max_age=30 * 24 * 3600,
 )
 
+@app.on_event("startup")
+def _claim_unowned_profiles() -> None:
+    from . import db, ownership
+    owner = db.get_user_by_email(auth.owner_email()) if auth.owner_email() else None
+    if owner:
+        ownership.assign_unowned_to(owner["id"])
+
+
 app.include_router(auth.router)
 app.include_router(profiles.router)
 app.include_router(applications.router)

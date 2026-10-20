@@ -2,6 +2,8 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 
 import json
 import pytest
@@ -22,6 +24,7 @@ def client(profiles_dir):
     from fastapi import FastAPI
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app)
 
 
@@ -63,10 +66,11 @@ def test_create_profile(client):
     assert data["name"] == "Rohit"
 
 
-def test_create_duplicate_slug_returns_409(client):
+def test_create_duplicate_slug_gets_unique_slug(client):
     client.post("/api/profiles", json={"name": "Rohit", "slug": "rohit"})
     resp = client.post("/api/profiles", json={"name": "Rohit2", "slug": "rohit"})
-    assert resp.status_code == 409
+    assert resp.status_code == 200
+    assert resp.json()["slug"] == "rohit-2"
 
 
 def test_delete_profile(client):

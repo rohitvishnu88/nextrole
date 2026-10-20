@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
+from a2a.auth import User, current_user
+from a2a.ownership import MAX_PROFILES_PER_USER, require_profile, unique_slug, visible_profiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -69,21 +72,23 @@ class ProfilePatch(BaseModel):
 
 
 @router.get("")
-def list_profiles():
-    return _load_meta()
+def list_profiles(user: User = Depends(current_user)):
+    return visible_profiles(user)
 
 
 @router.post("")
-def create_profile(body: ProfileCreate):
+def create_profile(body: ProfileCreate, user: User = Depends(current_user)):
+    if not user.is_owner and len(visible_profiles(user)) >= MAX_PROFILES_PER_USER:
+        raise HTTPException(status_code=409, detail={"code": "profile_limit", "limit": MAX_PROFILES_PER_USER})
     profiles = _load_meta()
-    slug = body.slug or _slugify(body.name)
-    if any(p["slug"] == slug for p in profiles):
-        raise HTTPException(status_code=409, detail=f"Slug '{slug}' already exists")
+    # Slugs are folder names shared by everyone, so a clash is resolved rather than refused.
+    slug = unique_slug(body.slug or _slugify(body.name))
     profile = {
         "id": str(uuid.uuid4()),
         "name": body.name,
         "slug": slug,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "owner_user_id": user.id,
     }
     profiles.append(profile)
     _save_meta(profiles)
@@ -93,7 +98,8 @@ def create_profile(body: ProfileCreate):
 
 
 @router.patch("/{slug}")
-def update_profile(slug: str, body: ProfilePatch):
+def update_profile(slug: str, body: ProfilePatch, user: User = Depends(current_user)):
+    require_profile(slug, user)
     profiles = _load_meta()
     for p in profiles:
         if p["slug"] == slug:
@@ -104,7 +110,8 @@ def update_profile(slug: str, body: ProfilePatch):
 
 
 @router.delete("/{slug}")
-def delete_profile(slug: str):
+def delete_profile(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     import shutil
     profiles = _load_meta()
     updated = [p for p in profiles if p["slug"] != slug]
@@ -118,7 +125,8 @@ def delete_profile(slug: str):
 
 
 @router.get("/{slug}/resume")
-def get_resume(slug: str):
+def get_resume(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     resume_file = _profiles_dir() / slug / "resume_data.json"
     if not resume_file.exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
@@ -126,7 +134,8 @@ def get_resume(slug: str):
 
 
 @router.get("/{slug}/resume/pdf")
-def download_resume_pdf(slug: str):
+def download_resume_pdf(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     resume = resume_history.load_current(slug)
     if resume is None:
@@ -147,7 +156,8 @@ def download_resume_pdf(slug: str):
 
 
 @router.post("/{slug}/resume/parse")
-async def parse_resume(slug: str, file: UploadFile = File(...)):
+async def parse_resume(slug: str, file: UploadFile = File(...), user: User = Depends(current_user)):
+    require_profile(slug, user)
     import io
     import sys
     import anthropic
@@ -239,7 +249,8 @@ def _require_valid_slug(slug: str) -> None:
 
 
 @router.post("/{slug}/resume/confirm")
-def confirm_resume(slug: str):
+def confirm_resume(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     if slug not in _PARSE_CACHE:
         raise HTTPException(status_code=404, detail="No pending parse result for this profile. Run /parse first.")

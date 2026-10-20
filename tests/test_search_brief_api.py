@@ -1,6 +1,8 @@
 import sys, json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
+from auth_helpers import OWNER, sign_in
 
 import pytest
 from fastapi import FastAPI
@@ -34,6 +36,7 @@ def client(profiles_dir):
     importlib.reload(mod)
     app = FastAPI()
     app.include_router(mod.router)
+    sign_in(app, OWNER)
     return TestClient(app)
 
 

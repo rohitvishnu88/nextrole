@@ -77,6 +77,9 @@ async def callback(request: Request):
         return RedirectResponse(f"{_base_url()}/?auth_error=not_invited&email={quote(email)}")
     user = db.upsert_user(email, info.get("name") or "", info.get("picture") or "", email == owner_email())
     request.session["user_id"] = user["id"]
+    if user["is_owner"]:
+        from a2a import ownership  # imported here: ownership depends on this module
+        ownership.assign_unowned_to(user["id"])
     return RedirectResponse(f"{_base_url()}/")
 
 

@@ -3,7 +3,10 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from a2a.auth import User, current_user
+from a2a.ownership import require_profile
 from pydantic import BaseModel
 
 from a2a import resume_history
@@ -282,7 +285,8 @@ DRAFT_PROMPT_BUILDERS = {
 
 
 @router.get("/{slug}/resume/history")
-def list_history(slug: str):
+def list_history(slug: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     versions = resume_history.load_history(slug)
     return [
@@ -292,7 +296,8 @@ def list_history(slug: str):
 
 
 @router.get("/{slug}/resume/history/{version_id}")
-def get_history_version(slug: str, version_id: str):
+def get_history_version(slug: str, version_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     version = resume_history.get_version(slug, version_id)
     if version is None:
@@ -301,7 +306,8 @@ def get_history_version(slug: str, version_id: str):
 
 
 @router.post("/{slug}/resume/history/{version_id}/restore")
-def restore_history_version(slug: str, version_id: str):
+def restore_history_version(slug: str, version_id: str, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     restored = resume_history.restore_version(slug, version_id)
     if restored is None:
@@ -310,7 +316,8 @@ def restore_history_version(slug: str, version_id: str):
 
 
 @router.post("/{slug}/resume/sections/{section}/apply")
-def apply_section(slug: str, section: str, body: SectionApply):
+def apply_section(slug: str, section: str, body: SectionApply, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     kind = _section_kind(section)
     resume = resume_history.load_current(slug)
@@ -325,7 +332,8 @@ def apply_section(slug: str, section: str, body: SectionApply):
 
 
 @router.post("/{slug}/resume/sections/{section}/draft")
-def draft_section(slug: str, section: str, body: SectionDraft):
+def draft_section(slug: str, section: str, body: SectionDraft, user: User = Depends(current_user)):
+    require_profile(slug, user)
     _require_valid_slug(slug)
     import anthropic
     sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
