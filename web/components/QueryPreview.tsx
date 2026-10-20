@@ -43,38 +43,38 @@ export function QueryPreview({ signals }: Props) {
   const activeCount = signals.filter(s => s.active).length;
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-border p-5 sticky top-24">
+    <div className="bg-surface border border-rule-soft p-5 sticky top-24">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-navy text-sm">Live Query Preview</h3>
-        <span className="text-xs text-muted bg-cream px-2 py-0.5 rounded-full border border-warm-border">
+        <h3 className="font-bold text-ink text-sm">live query preview</h3>
+        <span className="text-xs text-ink-muted bg-paper px-2 py-0.5 border border-rule-soft">
           {activeCount} active
         </span>
       </div>
 
-      <p className="text-xs text-muted mb-4 leading-relaxed">
+      <p className="text-xs text-ink-muted mb-4 leading-relaxed">
         The job search agent constructs queries like these from your active signals.
         Toggle signals to see them update.
       </p>
 
       <div className="space-y-2">
         {queries.map((q, i) => (
-          <div key={i} className="bg-gray-950 rounded-xl px-3 py-2.5">
-            <p className="text-green-400 text-xs font-mono leading-relaxed break-all">{q}</p>
+          <div key={i} className="bg-ink px-3 py-2.5">
+            <p className="text-blue text-xs font-mono leading-relaxed break-all">{q}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-warm-border flex gap-4 text-xs text-muted">
+      <div className="mt-4 pt-4 border-t border-rule-soft flex gap-4 text-xs text-ink-muted">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+          <span className="w-2 h-2 bg-blue shrink-0" />
           High confidence
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
+          <span className="w-2 h-2 bg-yellow shrink-0" />
           Inferred
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+          <span className="w-2 h-2 bg-rule-soft shrink-0" />
           Default
         </span>
       </div>

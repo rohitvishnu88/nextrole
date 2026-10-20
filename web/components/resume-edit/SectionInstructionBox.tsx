@@ -27,26 +27,26 @@ export function SectionInstructionBox({ placeholder, submitLabel, onSubmit, onCa
   }
 
   return (
-    <div className="bg-surface rounded-lg p-3 space-y-2">
+    <div className="bg-surface p-3 space-y-2">
       <textarea
         value={instruction}
         onChange={e => setInstruction(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-accent"
+        className="w-full text-sm border border-rule-soft p-2 focus:outline-none focus:ring-1 focus:ring-ink"
       />
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={onCancel}
-          className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50"
+          className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper"
         >
-          Cancel
+          cancel
         </button>
         <button
           onClick={handleSubmit}
           disabled={loading || !instruction.trim()}
-          className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 disabled:opacity-50 hover:bg-accent/90"
+          className="text-xs bg-ink text-paper px-3 py-1.5 disabled:opacity-50 hover:bg-ink/80"
         >
           {loading ? "Drafting..." : submitLabel}
         </button>

@@ -25,36 +25,36 @@ export default function ApplicationsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy">Applications</h1>
-          <p className="text-sm text-muted mt-1">{apps.length} role{apps.length !== 1 ? "s" : ""} tracked</p>
+          <h1 className="text-2xl font-bold text-ink">applications</h1>
+          <p className="text-sm text-ink-muted mt-1">{apps.length} role{apps.length !== 1 ? "s" : ""} tracked</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-white border border-warm-border rounded-xl p-1 gap-0.5">
+          <div className="flex bg-surface border border-rule-soft p-1 gap-0.5">
             <button
               onClick={() => setView("table")}
-              className={`p-1.5 rounded-lg transition-colors ${view === "table" ? "bg-cream text-navy" : "text-muted hover:text-navy"}`}
+              className={`p-1.5 transition-colors ${view === "table" ? "bg-paper text-ink" : "text-ink-muted hover:text-ink"}`}
             >
               <List size={15} />
             </button>
             <button
               onClick={() => setView("kanban")}
-              className={`p-1.5 rounded-lg transition-colors ${view === "kanban" ? "bg-cream text-navy" : "text-muted hover:text-navy"}`}
+              className={`p-1.5 transition-colors ${view === "kanban" ? "bg-paper text-ink" : "text-ink-muted hover:text-ink"}`}
             >
               <LayoutGrid size={15} />
             </button>
           </div>
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 bg-accent hover:bg-accent-hover text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
+            className="flex items-center gap-1.5 bg-ink hover:bg-ink/80 text-paper px-4 py-2 text-sm font-bold transition-colors"
           >
             <Plus size={14} />
-            Add Application
+            add application
           </button>
         </div>
       </div>
 
       {!profile && (
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl px-5 py-4 text-sm text-yellow-700">
+        <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
           Select a profile first.
         </div>
       )}

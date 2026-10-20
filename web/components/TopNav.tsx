@@ -1,54 +1,43 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, Briefcase, Search, ListChecks, Info } from "lucide-react";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 
 const nav = [
-  { href: "/",             label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/tailor",       label: "Tailor Resume", icon: FileText },
-  { href: "/jobs",         label: "Jobs",          icon: ListChecks },
-  { href: "/applications", label: "Applications",  icon: Briefcase },
-  { href: "/search-brief", label: "Search Brief",  icon: Search },
-  { href: "/about",        label: "About",          icon: Info },
+  { href: "/",             label: "dashboard" },
+  { href: "/tailor",       label: "tailor" },
+  { href: "/jobs",         label: "jobs" },
+  { href: "/applications", label: "applications" },
+  { href: "/search-brief", label: "search brief" },
+  { href: "/about",        label: "about" },
 ];
 
 export function TopNav() {
   const pathname = usePathname();
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-warm-border">
+    <header className="sticky top-0 z-40 bg-paper border-b-[1.5px] border-ink">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
-
-        {/* Clickable brand */}
-        <Link
-          href="/"
-          className="font-brand font-bold text-lg text-navy tracking-tight shrink-0 hover:opacity-80 transition-opacity"
-        >
-          NextRole<span className="text-accent">.</span>
+        <Link href="/" className="font-bold text-lg text-ink shrink-0">
+          nextrole.
         </Link>
 
-        {/* Nav tabs */}
-        <nav className="flex items-center gap-0.5">
-          {nav.map(({ href, label, icon: Icon }) => {
+        <nav className="flex items-center gap-5">
+          {nav.map(({ href, label }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-cream text-navy"
-                    : "text-muted hover:text-navy hover:bg-cream"
+                className={`text-sm py-1 border-b-2 transition-colors ${
+                  active ? "border-ink text-ink font-bold" : "border-transparent text-ink-muted hover:text-ink"
                 }`}
               >
-                <Icon size={13} />
                 {label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Profile switcher */}
         <div className="shrink-0">
           <ProfileSwitcher />
         </div>

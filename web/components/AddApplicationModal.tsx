@@ -41,12 +41,12 @@ export function AddApplicationModal({ profileId, prefillUrl, onClose, onCreated 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+    <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+      <div className="bg-surface border-[1.5px] border-ink w-full max-w-md p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-ink-muted hover:text-ink-muted">
           <X size={18} />
         </button>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Application</h2>
+        <h2 className="text-lg font-bold text-ink mb-4">add application</h2>
         <div className="space-y-3">
           {(["job_title", "company", "location", "url"] as const).map(field => (
             <input
@@ -54,13 +54,13 @@ export function AddApplicationModal({ profileId, prefillUrl, onClose, onCreated 
               value={form[field]}
               onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
               placeholder={field === "job_title" ? "Job Title *" : field.charAt(0).toUpperCase() + field.slice(1)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full border-[1.5px] border-ink px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink"
             />
           ))}
           <select
             value={form.status}
             onChange={e => setForm(f => ({ ...f, status: e.target.value as ApplicationStatus }))}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            className="w-full border-[1.5px] border-ink px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink"
           >
             {STATUSES.map(s => (
               <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -71,13 +71,13 @@ export function AddApplicationModal({ profileId, prefillUrl, onClose, onCreated 
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             placeholder="Notes (optional)"
             rows={3}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+            className="w-full border-[1.5px] border-ink px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink resize-none"
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
           <button
             onClick={handleSubmit}
             disabled={!form.job_title || !form.company || loading}
-            className="w-full bg-accent text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 hover:bg-accent/90 transition-colors"
+            className="w-full bg-ink text-paper py-2 text-sm font-medium disabled:opacity-50 hover:bg-ink/80 transition-colors"
           >
             {loading ? "Saving..." : "Add Application"}
           </button>

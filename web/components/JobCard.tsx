@@ -13,10 +13,10 @@ const SOURCE_LABEL: Record<JobMatch["source"], string> = {
 };
 
 const SOURCE_COLOUR: Record<JobMatch["source"], string> = {
-  linkedin: "bg-accent-light text-accent",
-  greenhouse: "bg-green-soft text-green-text",
-  lever: "bg-yellow-50 text-yellow-700",
-  yc: "bg-cream text-navy border border-warm-border",
+  linkedin: "bg-blue/10 text-ink",
+  greenhouse: "bg-blue/10 text-ink",
+  lever: "bg-yellow/10 text-ink",
+  yc: "bg-paper text-ink border border-rule-soft",
 };
 
 export function JobCard({
@@ -72,56 +72,56 @@ export function JobCard({
   }
 
   return (
-    <div className="bg-white border border-warm-border rounded-2xl p-5 flex flex-col gap-3">
+    <div className="bg-surface border border-rule-soft p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-navy">{job.title}</h3>
+            <h3 className="font-bold text-ink">{job.title}</h3>
             {job.status === "new" && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent text-white">New</span>
+              <span className="text-xs font-medium px-2 py-0.5 bg-ink text-paper">New</span>
             )}
           </div>
-          <p className="text-sm text-muted">{job.company} · {job.location}</p>
+          <p className="text-sm text-ink-muted">{job.company} · {job.location}</p>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full shrink-0 ${SOURCE_COLOUR[job.source]}`}>
+        <span className={`text-xs font-medium px-2.5 py-0.5 shrink-0 ${SOURCE_COLOUR[job.source]}`}>
           {SOURCE_LABEL[job.source]}
         </span>
       </div>
 
-      <p className="text-sm text-navy">{job.match_reason}</p>
-      <p className="text-xs text-muted">Match score: {job.relevance_score}/10</p>
+      <p className="text-sm text-ink">{job.match_reason}</p>
+      <p className="text-xs text-ink-muted">Match score: {job.relevance_score}/10</p>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
 
       <div className="flex items-center gap-2 pt-1">
         <a
           href={job.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-sm font-medium text-navy hover:text-accent transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink transition-colors"
         >
-          <ExternalLink size={14} /> View
+          <ExternalLink size={14} /> view
         </a>
         <button
           onClick={handleTailor}
           disabled={busy}
-          className="flex items-center gap-1.5 text-sm font-medium text-navy hover:text-accent transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink transition-colors disabled:opacity-50"
         >
-          <Wand2 size={14} /> Tailor
+          <Wand2 size={14} /> tailor
         </button>
         <button
           onClick={handleApply}
           disabled={busy}
-          className="flex items-center gap-1.5 text-sm font-medium text-green-text hover:opacity-80 transition-opacity disabled:opacity-50 ml-auto"
+          className="flex items-center gap-1.5 text-sm font-medium text-ink hover:opacity-80 transition-opacity disabled:opacity-50 ml-auto"
         >
-          <Check size={14} /> Applied
+          <Check size={14} /> applied
         </button>
         <button
           onClick={handleDismiss}
           disabled={busy}
-          className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-red-600 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors disabled:opacity-50"
         >
-          <X size={14} /> Dismiss
+          <X size={14} /> dismiss
         </button>
       </div>
     </div>

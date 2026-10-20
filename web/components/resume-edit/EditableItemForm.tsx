@@ -16,7 +16,7 @@ export function EditableItemForm({ value, onChange }: Props) {
         value={value}
         onChange={e => onChange(e.target.value)}
         rows={4}
-        className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-accent"
+        className="w-full text-sm border border-rule-soft p-2 focus:outline-none focus:ring-1 focus:ring-ink"
       />
     );
   }
@@ -25,19 +25,19 @@ export function EditableItemForm({ value, onChange }: Props) {
     <div className="space-y-2">
       {Object.entries(value).map(([key, fieldValue]) => (
         <div key={key}>
-          <label className="block text-xs font-medium text-gray-500 mb-0.5">{key}</label>
+          <label className="block text-xs font-medium text-ink-muted mb-0.5">{key}</label>
           {isStringArray(fieldValue) ? (
             <textarea
               value={fieldValue.join("\n")}
               onChange={e => onChange({ ...value, [key]: e.target.value.split("\n") })}
               rows={Math.max(2, fieldValue.length)}
-              className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full text-sm border border-rule-soft p-2 focus:outline-none focus:ring-1 focus:ring-ink"
             />
           ) : (
             <input
               value={String(fieldValue ?? "")}
               onChange={e => onChange({ ...value, [key]: e.target.value })}
-              className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full text-sm border border-rule-soft p-2 focus:outline-none focus:ring-1 focus:ring-ink"
             />
           )}
         </div>

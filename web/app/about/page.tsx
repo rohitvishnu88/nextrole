@@ -67,15 +67,15 @@ function WorkflowStep({ number, icon: Icon, title, description, color }: {
   return (
     <div className="flex gap-5">
       <div className="shrink-0 flex flex-col items-center">
-        <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center shrink-0`}>
+        <div className={`w-10 h-10 ${color} flex items-center justify-center shrink-0`}>
           <Icon size={18} />
         </div>
         <div className="w-px flex-1 bg-warm-border mt-3" />
       </div>
       <div className="pb-8">
-        <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Step {number}</p>
-        <h3 className="font-semibold text-navy mb-1">{title}</h3>
-        <p className="text-sm text-muted leading-relaxed">{description}</p>
+        <p className="text-xs font-bold text-ink-muted mb-1">Step {number}</p>
+        <h3 className="font-bold text-ink mb-1">{title}</h3>
+        <p className="text-sm text-ink-muted leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -86,19 +86,19 @@ const features = [
     icon: Wand2,
     title: "AI Resume Tailoring",
     description: "Paste a job URL or description — Claude rewrites your resume bullets to match the role, then generates a targeted cover letter. All in under a minute.",
-    color: "bg-accent-light text-accent",
+    color: "bg-blue/10 text-ink",
   },
   {
     icon: Briefcase,
     title: "Application Tracker",
     description: "Track every role from Saved to Offer in a clean table or drag-and-drop kanban board. Know exactly where you stand at a glance.",
-    color: "bg-green-soft text-green-text",
+    color: "bg-blue/10 text-ink",
   },
   {
     icon: Search,
     title: "Search Brief",
     description: "See exactly what parameters the job search agent uses — target roles, core skills, location, seniority. Toggle signals on and off and watch the queries update live.",
-    color: "bg-yellow-50 text-yellow-700",
+    color: "bg-yellow/10 text-ink",
   },
   {
     icon: Globe,
@@ -116,7 +116,7 @@ const features = [
     icon: Shield,
     title: "Local & Private",
     description: "Your resume data lives in JSON files on your machine. No cloud database, no accounts, no tracking. The FastAPI backend runs locally and your files never leave your computer.",
-    color: "bg-blue-50 text-blue-700",
+    color: "bg-blue/10 text-ink",
   },
 ];
 
@@ -127,28 +127,28 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="grid grid-cols-2 gap-12 items-center pt-4">
         <div>
-          <div className="inline-flex items-center gap-2 bg-accent-light text-accent text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-blue/10 text-ink text-xs font-bold px-3 py-1.5 mb-6">
             <Zap size={12} />
             Powered by Claude AI
           </div>
-          <h1 className="text-4xl font-bold text-navy leading-tight mb-4">
+          <h1 className="text-4xl font-bold text-ink leading-tight mb-4">
             Your resume,<br />tailored for every role.
           </h1>
-          <p className="text-muted text-lg leading-relaxed mb-8">
+          <p className="text-ink-muted text-lg leading-relaxed mb-8">
             Resume. is an AI-powered job search tool that tailors your resume to each job description,
             tracks your applications, and gives you full transparency into the search parameters used on your behalf.
           </p>
           <div className="flex gap-3">
             <Link
               href="/tailor"
-              className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
             >
               <Wand2 size={15} />
-              Tailor a Resume
+              tailor a resume
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-2 border border-warm-border text-navy hover:bg-cream rounded-xl px-5 py-2.5 text-sm font-medium transition-colors"
+              className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-5 py-2.5 text-sm font-medium transition-colors"
             >
               Go to Dashboard
               <ArrowRight size={14} />
@@ -156,7 +156,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-warm-border p-6 shadow-sm aspect-[3/2]">
+        <div className="bg-surface border border-rule-soft p-6  aspect-[3/2]">
           <HeroIllustration />
         </div>
       </section>
@@ -164,8 +164,8 @@ export default function AboutPage() {
       {/* How it works */}
       <section>
         <div className="mb-10">
-          <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-2">How it works</p>
-          <h2 className="text-2xl font-bold text-navy">From resume to interview in three steps</h2>
+          <p className="text-xs font-bold text-ink mb-2">How it works</p>
+          <h2 className="text-2xl font-bold text-ink">from resume to interview in three steps</h2>
         </div>
 
         <div className="grid grid-cols-2 gap-12">
@@ -175,44 +175,44 @@ export default function AboutPage() {
               icon={FileText}
               title="Create your profile"
               description="Upload your existing resume as a PDF or DOCX. Claude parses it into a structured JSON profile — name, summary, experience with all bullet points, skills, education, and certifications."
-              color="bg-accent-light text-accent"
+              color="bg-blue/10 text-ink"
             />
             <WorkflowStep
               number="02"
               icon={Wand2}
               title="Tailor to each role"
               description="Paste a LinkedIn URL or job description. Claude rewrites your summary and reorders your experience bullets to emphasise the most relevant work. A cover letter is generated in the same pass."
-              color="bg-green-soft text-green-text"
+              color="bg-blue/10 text-ink"
             />
             <WorkflowStep
               number="03"
               icon={Briefcase}
               title="Track every application"
               description="Download the tailored PDF and add the role to your tracker. Move applications between Saved, Applied, Interview, Offer, and Rejected — in a table or drag-and-drop kanban board."
-              color="bg-yellow-50 text-yellow-700"
+              color="bg-yellow/10 text-ink"
             />
           </div>
 
-          <div className="bg-white rounded-3xl border border-warm-border p-8 flex flex-col justify-center">
-            <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-6">What the AI sees</p>
+          <div className="bg-surface border border-rule-soft p-8 flex flex-col justify-center">
+            <p className="text-xs font-bold text-ink-muted mb-6">What the AI sees</p>
             <div className="space-y-3">
               {[
-                { label: "Your full resume", sub: "Extracted from PDF or DOCX", dot: "bg-green-500" },
-                { label: "Job description", sub: "From URL or pasted text", dot: "bg-accent" },
-                { label: "Humanise rules", sub: "No AI-sounding filler phrases", dot: "bg-yellow-400" },
+                { label: "Your full resume", sub: "Extracted from PDF or DOCX", dot: "bg-blue" },
+                { label: "Job description", sub: "From URL or pasted text", dot: "bg-ink" },
+                { label: "Humanise rules", sub: "No AI-sounding filler phrases", dot: "bg-yellow" },
                 { label: "Search brief signals", sub: "Your target roles, skills, location", dot: "bg-blue-400" },
               ].map(item => (
-                <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl bg-cream">
-                  <span className={`w-2.5 h-2.5 rounded-full ${item.dot} shrink-0`} />
+                <div key={item.label} className="flex items-center gap-3 p-3 bg-paper">
+                  <span className={`w-2.5 h-2.5 ${item.dot} shrink-0`} />
                   <div>
-                    <p className="text-sm font-medium text-navy">{item.label}</p>
-                    <p className="text-xs text-muted">{item.sub}</p>
+                    <p className="text-sm font-medium text-ink">{item.label}</p>
+                    <p className="text-xs text-ink-muted">{item.sub}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 p-4 bg-navy rounded-xl">
-              <p className="text-green-400 text-xs font-mono leading-relaxed">
+            <div className="mt-6 p-4 bg-ink ">
+              <p className="text-blue text-xs font-mono leading-relaxed">
                 → Tailored resume PDF<br />
                 → Cover letter<br />
                 → Application tracked
@@ -225,34 +225,34 @@ export default function AboutPage() {
       {/* Features grid */}
       <section>
         <div className="mb-10">
-          <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-2">Features</p>
-          <h2 className="text-2xl font-bold text-navy">Everything you need for a focused job search</h2>
+          <p className="text-xs font-bold text-ink mb-2">Features</p>
+          <h2 className="text-2xl font-bold text-ink">everything you need for a focused job search</h2>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           {features.map(({ icon: Icon, title, description, color }) => (
-            <div key={title} className="bg-white rounded-2xl border border-warm-border p-6">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${color}`}>
+            <div key={title} className="bg-surface border border-rule-soft p-6">
+              <div className={`w-10 h-10 flex items-center justify-center mb-4 ${color}`}>
                 <Icon size={18} />
               </div>
-              <h3 className="font-semibold text-navy mb-2">{title}</h3>
-              <p className="text-sm text-muted leading-relaxed">{description}</p>
+              <h3 className="font-bold text-ink mb-2">{title}</h3>
+              <p className="text-sm text-ink-muted leading-relaxed">{description}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Tech stack */}
-      <section className="bg-white rounded-3xl border border-warm-border p-10">
+      <section className="bg-surface border border-rule-soft p-10">
         <div className="grid grid-cols-2 gap-10 items-center">
           <div>
-            <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-2">Built on</p>
-            <h2 className="text-2xl font-bold text-navy mb-4">A modern, open stack</h2>
-            <p className="text-muted text-sm leading-relaxed mb-6">
+            <p className="text-xs font-bold text-ink mb-2">Built on</p>
+            <h2 className="text-2xl font-bold text-ink mb-4">a modern, open stack</h2>
+            <p className="text-ink-muted text-sm leading-relaxed mb-6">
               Resume. is a locally-hosted tool — no SaaS subscription, no data leaving your machine.
               The Python backend handles AI operations and PDF generation; the Next.js frontend gives you a fast, reactive UI.
             </p>
-            <Link href="/search-brief" className="flex items-center gap-2 text-accent text-sm font-medium hover:underline">
+            <Link href="/search-brief" className="flex items-center gap-2 text-ink text-sm font-medium hover:underline">
               See Search Brief transparency
               <ArrowRight size={14} />
             </Link>
@@ -266,14 +266,14 @@ export default function AboutPage() {
               { name: "Tailwind CSS", role: "Utility-first styling system", badge: "UI" },
               { name: "SQLite", role: "Local application tracker DB", badge: "stdlib" },
             ].map(item => (
-              <div key={item.name} className="bg-cream rounded-xl p-4 border border-warm-border">
+              <div key={item.name} className="bg-paper p-4 border border-rule-soft">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-semibold text-navy">{item.name}</p>
-                  <span className="text-xs text-muted bg-white border border-warm-border px-1.5 py-0.5 rounded-full">
+                  <p className="text-sm font-bold text-ink">{item.name}</p>
+                  <span className="text-xs text-ink-muted bg-surface border border-rule-soft px-1.5 py-0.5 ">
                     {item.badge}
                   </span>
                 </div>
-                <p className="text-xs text-muted">{item.role}</p>
+                <p className="text-xs text-ink-muted">{item.role}</p>
               </div>
             ))}
           </div>
@@ -282,14 +282,14 @@ export default function AboutPage() {
 
       {/* CTA */}
       <section className="text-center pb-4">
-        <h2 className="text-2xl font-bold text-navy mb-3">Ready to tailor your first resume?</h2>
-        <p className="text-muted text-sm mb-8">Takes less than a minute. Paste a job URL and let Claude do the work.</p>
+        <h2 className="text-2xl font-bold text-ink mb-3">ready to tailor your first resume?</h2>
+        <p className="text-ink-muted text-sm mb-8">Takes less than a minute. Paste a job URL and let Claude do the work.</p>
         <Link
           href="/tailor"
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white rounded-xl px-6 py-3 text-sm font-semibold transition-colors"
+          className="inline-flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-6 py-3 text-sm font-bold transition-colors"
         >
           <Wand2 size={15} />
-          Get started
+          get started
         </Link>
       </section>
 

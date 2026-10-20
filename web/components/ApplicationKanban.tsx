@@ -7,7 +7,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Application, ApplicationStatus } from "@/lib/types";
-import { StatusBadge } from "./StatusBadge";
+import { StatusMarker } from "./ui/StatusMarker";
 import * as api from "@/lib/api";
 
 const COLUMNS: ApplicationStatus[] = ["saved", "applied", "interview", "offer", "rejected"];
@@ -15,11 +15,11 @@ const COL_LABELS: Record<ApplicationStatus, string> = {
   saved: "Saved", applied: "Applied", interview: "Interview", offer: "Offer", rejected: "Rejected",
 };
 const COL_COLOURS: Record<ApplicationStatus, string> = {
-  saved:     "bg-cream border-warm-border",
-  applied:   "bg-accent-light border-accent/20",
-  interview: "bg-yellow-50 border-yellow-100",
-  offer:     "bg-green-soft border-green-200",
-  rejected:  "bg-red-50 border-red-100",
+  saved:     "bg-paper border-rule-soft",
+  applied:   "bg-blue/10 border-accent/20",
+  interview: "bg-yellow/10 border-yellow",
+  offer:     "bg-blue/10 border-blue",
+  rejected:  "bg-red/10 border-red",
 };
 
 function KanbanCard({ app, isDragging }: { app: Application; isDragging?: boolean }) {
@@ -31,11 +31,11 @@ function KanbanCard({ app, isDragging }: { app: Application; isDragging?: boolea
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white rounded-xl px-3.5 py-3 border border-warm-border shadow-sm cursor-grab active:cursor-grabbing"
+      className="bg-surface px-3.5 py-3 border border-rule-soft  cursor-grab active:cursor-grabbing"
     >
-      <p className="text-sm font-semibold text-navy truncate">{app.company}</p>
-      <p className="text-xs text-muted truncate mt-0.5">{app.job_title}</p>
-      {app.applied_date && <p className="text-xs text-muted/70 mt-1.5">{app.applied_date}</p>}
+      <p className="text-sm font-bold text-ink truncate">{app.company}</p>
+      <p className="text-xs text-ink-muted truncate mt-0.5">{app.job_title}</p>
+      {app.applied_date && <p className="text-xs text-ink-muted mt-1.5">{app.applied_date}</p>}
     </div>
   );
 }
@@ -72,11 +72,11 @@ export function ApplicationKanban({ apps, onRefresh }: Props) {
           return (
             <div key={col} className="flex-shrink-0 w-52">
               <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-xs font-semibold text-muted uppercase tracking-wide">{COL_LABELS[col]}</span>
-                <span className="text-xs text-muted bg-cream border border-warm-border rounded-full px-2 py-0.5">{colApps.length}</span>
+                <span className="text-xs font-bold text-ink-muted">{COL_LABELS[col]}</span>
+                <span className="text-xs text-ink-muted bg-paper border border-rule-soft px-2 py-0.5">{colApps.length}</span>
               </div>
               <SortableContext id={col} items={colApps.map(a => a.id)} strategy={verticalListSortingStrategy}>
-                <div className={`min-h-24 rounded-2xl border p-2 space-y-2 ${COL_COLOURS[col]}`} id={col}>
+                <div className={`min-h-24 border p-2 space-y-2 ${COL_COLOURS[col]}`} id={col}>
                   {colApps.map(app => (
                     <KanbanCard key={app.id} app={app} isDragging={activeApp?.id === app.id} />
                   ))}
@@ -88,9 +88,9 @@ export function ApplicationKanban({ apps, onRefresh }: Props) {
       </div>
       <DragOverlay>
         {activeApp && (
-          <div className="bg-white rounded-xl px-3.5 py-3 border border-accent/30 shadow-lg w-52">
-            <p className="text-sm font-semibold text-navy">{activeApp.company}</p>
-            <p className="text-xs text-muted mt-0.5">{activeApp.job_title}</p>
+          <div className="bg-surface px-3.5 py-3 border border-accent/30  w-52">
+            <p className="text-sm font-bold text-ink">{activeApp.company}</p>
+            <p className="text-xs text-ink-muted mt-0.5">{activeApp.job_title}</p>
           </div>
         )}
       </DragOverlay>

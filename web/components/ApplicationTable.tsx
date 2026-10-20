@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Application } from "@/lib/types";
-import { StatusBadge } from "./StatusBadge";
+import { StatusMarker } from "./ui/StatusMarker";
 import { Trash2 } from "lucide-react";
 import * as api from "@/lib/api";
 
@@ -30,7 +30,7 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
   const Th = ({ label, k }: { label: string; k: SortKey }) => (
     <th
       onClick={() => toggleSort(k)}
-      className="px-5 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-navy select-none"
+      className="px-5 py-3 text-left text-xs font-bold text-ink-muted cursor-pointer hover:text-ink select-none"
     >
       {label} {sortKey === k ? (sortAsc ? "↑" : "↓") : ""}
     </th>
@@ -42,28 +42,28 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-border overflow-hidden">
+    <div className="bg-surface border border-rule-soft overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-warm-border bg-cream">
+          <tr className="border-b border-rule-soft bg-paper">
             <Th label="Company" k="company" />
             <Th label="Role" k="job_title" />
-            <th className="px-5 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Location</th>
+            <th className="px-5 py-3 text-left text-xs font-bold text-ink-muted">Location</th>
             <Th label="Status" k="status" />
             <Th label="Applied" k="applied_date" />
             <th className="px-5 py-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-warm-border">
+        <tbody className="divide-y divide-rule-soft">
           {sorted.map(app => (
-            <tr key={app.id} className="hover:bg-cream transition-colors">
-              <td className="px-5 py-3.5 font-medium text-navy">{app.company}</td>
-              <td className="px-5 py-3.5 text-navy">{app.job_title}</td>
-              <td className="px-5 py-3.5 text-muted">{app.location ?? "—"}</td>
-              <td className="px-5 py-3.5"><StatusBadge status={app.status} /></td>
-              <td className="px-5 py-3.5 text-muted">{app.applied_date ?? "—"}</td>
+            <tr key={app.id} className="hover:bg-paper transition-colors">
+              <td className="px-5 py-3.5 font-medium text-ink">{app.company}</td>
+              <td className="px-5 py-3.5 text-ink">{app.job_title}</td>
+              <td className="px-5 py-3.5 text-ink-muted">{app.location ?? "—"}</td>
+              <td className="px-5 py-3.5"><StatusMarker status={app.status} /></td>
+              <td className="px-5 py-3.5 text-ink-muted">{app.applied_date ?? "—"}</td>
               <td className="px-5 py-3.5 text-right">
-                <button onClick={() => handleDelete(app.id)} className="text-warm-border hover:text-red-400 transition-colors">
+                <button onClick={() => handleDelete(app.id)} className="text-rule-soft hover:text-ink transition-colors">
                   <Trash2 size={14} />
                 </button>
               </td>
@@ -71,7 +71,7 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
           ))}
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-5 py-12 text-center text-muted text-sm">No applications yet</td>
+              <td colSpan={6} className="px-5 py-12 text-center text-ink-muted text-sm">No applications yet</td>
             </tr>
           )}
         </tbody>

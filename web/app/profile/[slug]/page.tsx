@@ -63,59 +63,59 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (!resume) return <p className="text-sm text-gray-400">Loading...</p>;
+  if (error) return <p className="text-sm text-ink">{error}</p>;
+  if (!resume) return <p className="text-sm text-ink-muted">Loading...</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{resume.name ?? slug} — Resume Data</h1>
+        <h1 className="text-2xl font-bold text-ink">{resume.name ?? slug} — Resume Data</h1>
         <div className="flex items-center gap-2">
           <Link
             href={`/profile/${slug}/edit`}
-            className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-ink-muted border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
           >
             <Pencil size={13} />
-            Edit
+            edit
           </Link>
           <a
             href={`/api/profiles/${slug}/resume/pdf`}
             download
-            className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-ink-muted border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
           >
             <Download size={13} />
-            Download PDF
+            download pdf
           </a>
           {view === "json" && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-ink-muted border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
             >
-              {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+              {copied ? <Check size={13} className="text-blue" /> : <Copy size={13} />}
               {copied ? "Copied" : "Copy"}
             </button>
           )}
-          <div className="flex bg-surface rounded-lg p-1 gap-1">
+          <div className="flex bg-surface p-1 gap-1">
             <button
               onClick={() => setView("structured")}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${view === "structured" ? "bg-white shadow-sm text-gray-800" : "text-gray-400"}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${view === "structured" ? "bg-surface  text-ink" : "text-ink-muted"}`}
             >
               <LayoutList size={13} />
-              Structured
+              structured
             </button>
             <button
               onClick={() => setView("json")}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${view === "json" ? "bg-white shadow-sm text-gray-800" : "text-gray-400"}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${view === "json" ? "bg-surface  text-ink" : "text-ink-muted"}`}
             >
               <Code2 size={13} />
-              Raw JSON
+              raw json
             </button>
           </div>
         </div>
       </div>
 
       {view === "json" && raw && (
-        <pre className="bg-gray-950 text-green-400 text-xs rounded-xl p-5 overflow-x-auto overflow-y-auto max-h-[70vh] leading-relaxed">
+        <pre className="bg-ink text-blue text-xs p-5 overflow-x-auto overflow-y-auto max-h-[70vh] leading-relaxed">
           {JSON.stringify(raw, null, 2)}
         </pre>
       )}
@@ -123,8 +123,8 @@ export default function ProfilePage() {
       {view === "structured" && <>
 
       {(resume.designation || resume.email || resume.phone || resume.website || resume.work_right) && (
-        <section className="text-sm text-gray-600 space-y-0.5">
-          {resume.designation && <p className="font-medium text-gray-800">{resume.designation}</p>}
+        <section className="text-sm text-ink-muted space-y-0.5">
+          {resume.designation && <p className="font-medium text-ink">{resume.designation}</p>}
           <p>
             {[resume.email, resume.phone, resume.website].filter(Boolean).join(" · ")}
           </p>
@@ -134,22 +134,22 @@ export default function ProfilePage() {
 
       {resume.summary && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Summary</h2>
-          <p className="text-sm text-gray-700 leading-relaxed">{resume.summary}</p>
+          <h2 className="text-sm font-bold text-ink-muted mb-2">summary</h2>
+          <p className="text-sm text-ink leading-relaxed">{resume.summary}</p>
         </section>
       )}
 
       {resume.experience && resume.experience.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Experience</h2>
+          <h2 className="text-sm font-bold text-ink-muted mb-3">experience</h2>
           <div className="space-y-4">
             {resume.experience.map((exp, i) => (
-              <div key={i} className="bg-surface rounded-lg p-4">
-                <p className="text-sm font-semibold text-gray-900">{exp.title}</p>
-                <p className="text-xs text-gray-500 mb-2">{exp.company} · {exp.start_date} – {exp.end_date}</p>
+              <div key={i} className="bg-surface p-4">
+                <p className="text-sm font-bold text-ink">{exp.title}</p>
+                <p className="text-xs text-ink-muted mb-2">{exp.company} · {exp.start_date} – {exp.end_date}</p>
                 <ul className="list-disc list-inside space-y-0.5">
                   {(exp.description ?? []).map((b, j) => (
-                    <li key={j} className="text-xs text-gray-600">{b}</li>
+                    <li key={j} className="text-xs text-ink-muted">{b}</li>
                   ))}
                 </ul>
               </div>
@@ -160,10 +160,10 @@ export default function ProfilePage() {
 
       {resume.skills && Object.keys(resume.skills).length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Skills</h2>
+          <h2 className="text-sm font-bold text-ink-muted mb-2">skills</h2>
           <div className="space-y-1">
             {Object.entries(resume.skills).map(([group, items]) => (
-              <p key={group} className="text-sm text-gray-700">
+              <p key={group} className="text-sm text-ink">
                 <span className="font-medium">{group}:</span>{" "}
                 {Array.isArray(items) ? items.join(", ") : String(items)}
               </p>
@@ -174,26 +174,26 @@ export default function ProfilePage() {
 
       {resume.education && resume.education.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Education</h2>
+          <h2 className="text-sm font-bold text-ink-muted mb-2">education</h2>
           {resume.education.map((e, i) => (
-            <p key={i} className="text-sm text-gray-700">{e.degree} — {e.school}</p>
+            <p key={i} className="text-sm text-ink">{e.degree} — {e.school}</p>
           ))}
         </section>
       )}
 
       {resume.certifications && resume.certifications.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Certifications</h2>
+          <h2 className="text-sm font-bold text-ink-muted mb-2">certifications</h2>
           {resume.certifications.map((c, i) => (
-            <p key={i} className="text-sm text-gray-700">{c.name} — {c.issuer}</p>
+            <p key={i} className="text-sm text-ink">{c.name} — {c.issuer}</p>
           ))}
         </section>
       )}
 
       {resume.languages && resume.languages.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Languages</h2>
-          <p className="text-sm text-gray-700">{resume.languages.join(", ")}</p>
+          <h2 className="text-sm font-bold text-ink-muted mb-2">languages</h2>
+          <p className="text-sm text-ink">{resume.languages.join(", ")}</p>
         </section>
       )}
 

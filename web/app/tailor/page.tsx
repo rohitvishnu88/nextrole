@@ -71,26 +71,26 @@ function TailorPageInner() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-navy">Tailor a Resume</h1>
-        <p className="text-sm text-muted mt-1">Paste a job URL or description — get a tailored PDF and cover letter</p>
+        <h1 className="text-2xl font-bold text-ink">tailor a resume</h1>
+        <p className="text-sm text-ink-muted mt-1">Paste a job URL or description — get a tailored PDF and cover letter</p>
       </div>
 
       {!profile && (
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl px-5 py-4 text-sm text-yellow-700">
+        <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
           Select or create a profile first from the top-right.
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-warm-border p-6 space-y-4">
+      <div className="bg-surface border border-rule-soft p-6 space-y-4">
         <div className="flex gap-2">
           {(["url", "jd"] as const).map(m => (
             <button
               key={m}
               onClick={() => { setMode(m); setInput(""); }}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
                 mode === m
-                  ? "bg-accent text-white"
-                  : "bg-cream text-muted hover:text-navy"
+                  ? "bg-ink text-paper"
+                  : "bg-paper text-ink-muted hover:text-ink"
               }`}
             >
               {m === "url" ? "Job URL" : "Paste JD"}
@@ -103,7 +103,7 @@ function TailorPageInner() {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="https://linkedin.com/jobs/view/..."
-            className="w-full border border-warm-border rounded-xl px-4 py-2.5 text-sm text-navy placeholder-muted bg-cream focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition"
+            className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition"
           />
         ) : (
           <textarea
@@ -111,16 +111,16 @@ function TailorPageInner() {
             onChange={e => setInput(e.target.value)}
             placeholder="Paste the full job description here..."
             rows={8}
-            className="w-full border border-warm-border rounded-xl px-4 py-2.5 text-sm text-navy placeholder-muted bg-cream focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition resize-none"
+            className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-none"
           />
         )}
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-ink border-l-[3px] border-red pl-3">{error}</p>}
 
         <button
           onClick={handleSubmit}
           disabled={!input.trim() || !profile || polling}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
         >
           <Wand2 size={15} />
           {polling ? "Working…" : "Tailor Resume"}
@@ -128,26 +128,26 @@ function TailorPageInner() {
       </div>
 
       {job && (
-        <div className="bg-white rounded-2xl border border-warm-border p-6 space-y-4">
+        <div className="bg-surface border border-rule-soft p-6 space-y-4">
           <div className="flex items-center gap-2.5">
-            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-              job.status === "running" ? "bg-yellow-400 animate-pulse" :
-              job.status === "completed" ? "bg-green-500" : "bg-red-400"
+            <span className={`w-2.5 h-2.5 shrink-0 ${
+              job.status === "running" ? "bg-yellow animate-pulse" :
+              job.status === "completed" ? "bg-blue" : "bg-red"
             }`} />
-            <p className="text-sm font-medium text-navy">{job.message}</p>
+            <p className="text-sm font-medium text-ink">{job.message}</p>
           </div>
 
           {job.status === "completed" && tailoredResume && (
-            <div className="space-y-4 pt-1 border-t border-warm-border">
+            <div className="space-y-4 pt-1 border-t border-rule-soft">
               <div className="pt-3">
-                <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">Summary</p>
-                <p className="text-sm text-navy leading-relaxed">{tailoredResume.summary}</p>
+                <p className="text-xs font-bold text-ink-muted mb-1.5">Summary</p>
+                <p className="text-sm text-ink leading-relaxed">{tailoredResume.summary}</p>
               </div>
               <div className="space-y-3">
                 {tailoredResume.experience.map((exp, i) => (
-                  <div key={i} className="bg-cream rounded-xl p-4">
-                    <p className="text-sm font-semibold text-navy">{exp.title}</p>
-                    <p className="text-xs text-muted mb-2">
+                  <div key={i} className="bg-paper p-4">
+                    <p className="text-sm font-bold text-ink">{exp.title}</p>
+                    <p className="text-xs text-ink-muted mb-2">
                       {exp.company}{exp.highlight ? ` — ${exp.highlight}` : ""} · {exp.start_date} – {exp.end_date}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
@@ -166,32 +166,32 @@ function TailorPageInner() {
               <a
                 href={`/api/tailor/${job.job_id}/pdf`}
                 download
-                className="flex items-center gap-2 bg-navy hover:bg-navy/90 text-white rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-ink hover:bg-navy/90 text-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Download size={14} />
-                Download PDF
+                download pdf
               </a>
               <a
                 href={`/api/tailor/${job.job_id}/cover-letter`}
                 download
-                className="flex items-center gap-2 border border-warm-border text-navy hover:bg-cream rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Download size={14} />
-                Cover Letter
+                cover letter
               </a>
               <a
                 href={`/tailor/${job.job_id}/edit`}
-                className="flex items-center gap-2 border border-warm-border text-navy hover:bg-cream rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Pencil size={14} />
-                Edit Resume
+                edit resume
               </a>
               <button
                 onClick={() => setShowAddToTracker(true)}
-                className="flex items-center gap-2 border border-accent text-accent hover:bg-accent-light rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border border-ink text-ink hover:bg-blue/10 px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Plus size={14} />
-                Add to Tracker
+                add to tracker
               </button>
             </div>
           )}

@@ -95,7 +95,7 @@ export default function SearchBriefPage() {
 
   if (!profile) {
     return (
-      <div className="bg-yellow-50 border border-yellow-100 rounded-2xl px-5 py-4 text-sm text-yellow-700">
+      <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
         Select a profile first.
       </div>
     );
@@ -106,15 +106,15 @@ export default function SearchBriefPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy">Search Brief</h1>
-          <p className="text-sm text-muted mt-1">
+          <h1 className="text-2xl font-bold text-ink">search brief</h1>
+          <p className="text-sm text-ink-muted mt-1">
             {brief ? brief.headline : "Generate a brief to see what parameters the job search agent uses"}
           </p>
         </div>
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors shrink-0"
+          className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-4 py-2 text-sm font-bold transition-colors shrink-0"
         >
           {generating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {brief ? "Regenerate" : "Generate from Resume"}
@@ -122,33 +122,33 @@ export default function SearchBriefPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-3 text-sm text-red-600">{error}</div>
+        <div className="bg-red/10 border border-red px-5 py-3 text-sm text-ink">{error}</div>
       )}
 
       {loading && (
-        <div className="flex items-center gap-2 text-muted text-sm py-4">
+        <div className="flex items-center gap-2 text-ink-muted text-sm py-4">
           <Loader2 size={14} className="animate-spin" />
           Loading brief…
         </div>
       )}
 
       {!loading && !brief && !generating && (
-        <div className="bg-white rounded-2xl border border-warm-border p-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center mx-auto mb-4">
-            <RefreshCw size={20} className="text-accent" />
+        <div className="bg-surface border border-rule-soft p-12 text-center">
+          <div className="w-12 h-12 bg-blue/10 flex items-center justify-center mx-auto mb-4">
+            <RefreshCw size={20} className="text-ink" />
           </div>
-          <p className="text-navy font-semibold mb-1">No search brief yet</p>
-          <p className="text-muted text-sm max-w-xs mx-auto">
+          <p className="text-ink font-bold mb-1">No search brief yet</p>
+          <p className="text-ink-muted text-sm max-w-xs mx-auto">
             Click "Generate from Resume" — Claude reads your resume and extracts the search parameters automatically.
           </p>
         </div>
       )}
 
       {generating && (
-        <div className="bg-white rounded-2xl border border-warm-border p-12 text-center">
-          <Loader2 size={28} className="animate-spin text-accent mx-auto mb-3" />
-          <p className="text-navy font-semibold">Analysing your resume…</p>
-          <p className="text-muted text-sm mt-1">Claude is extracting search signals. This takes ~10 seconds.</p>
+        <div className="bg-surface border border-rule-soft p-12 text-center">
+          <Loader2 size={28} className="animate-spin text-ink mx-auto mb-3" />
+          <p className="text-ink font-bold">Analysing your resume…</p>
+          <p className="text-ink-muted text-sm mt-1">Claude is extracting search signals. This takes ~10 seconds.</p>
         </div>
       )}
 
@@ -162,14 +162,14 @@ export default function SearchBriefPage() {
               const chips = signalsByCategory(cat);
 
               return (
-                <div key={cat} className="bg-white rounded-2xl border border-warm-border p-5">
+                <div key={cat} className="bg-surface border border-rule-soft p-5">
                   <div className="flex items-baseline justify-between mb-1">
-                    <h2 className="font-semibold text-navy text-sm">{meta.label}</h2>
-                    <span className="text-xs text-muted">
+                    <h2 className="font-bold text-ink text-sm">{meta.label}</h2>
+                    <span className="text-xs text-ink-muted">
                       {chips.filter(s => s.active).length}/{chips.length} active
                     </span>
                   </div>
-                  <p className="text-xs text-muted mb-3">{meta.description}</p>
+                  <p className="text-xs text-ink-muted mb-3">{meta.description}</p>
 
                   <div className="flex flex-wrap gap-2">
                     {chips.map(signal => (
@@ -192,17 +192,17 @@ export default function SearchBriefPage() {
                             if (e.key === "Escape") { setAddingCategory(null); setNewLabel(""); }
                           }}
                           placeholder="Label…"
-                          className="text-sm border border-warm-border rounded-xl px-3 py-1.5 text-navy placeholder-muted bg-cream focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent w-32"
+                          className="text-sm border border-rule-soft px-3 py-1.5 text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink w-32"
                         />
                         <button
                           onClick={() => handleAdd(cat)}
-                          className="text-xs bg-accent text-white rounded-xl px-3 py-1.5 font-medium hover:bg-accent-hover transition-colors"
+                          className="text-xs bg-ink text-paper px-3 py-1.5 font-medium hover:bg-ink/80 transition-colors"
                         >
                           Add
                         </button>
                         <button
                           onClick={() => { setAddingCategory(null); setNewLabel(""); }}
-                          className="text-xs text-muted hover:text-navy transition-colors"
+                          className="text-xs text-ink-muted hover:text-ink transition-colors"
                         >
                           Cancel
                         </button>
@@ -210,10 +210,10 @@ export default function SearchBriefPage() {
                     ) : (
                       <button
                         onClick={() => setAddingCategory(cat)}
-                        className="flex items-center gap-1 text-xs text-muted hover:text-accent border border-dashed border-warm-border rounded-full px-3 py-1.5 transition-colors"
+                        className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink border border-dashed border-rule-soft px-3 py-1.5 transition-colors"
                       >
                         <Plus size={11} />
-                        Add
+                        add
                       </button>
                     )}
                   </div>

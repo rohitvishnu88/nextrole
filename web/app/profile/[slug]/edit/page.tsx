@@ -114,17 +114,17 @@ export default function ResumeEditPage() {
     const titleField = TITLE_FIELD[section];
     return (
       <section key={section}>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{SECTION_TITLES[section]}</h2>
+        <h2 className="text-sm font-bold text-ink-muted mb-2">{SECTION_TITLES[section]}</h2>
         <div className="space-y-3">
           {items.map((item, i) => (
-            <div key={i} className="bg-surface rounded-lg p-3">
+            <div key={i} className="bg-surface p-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-gray-800">{String(item[titleField] ?? "")}</p>
+                <p className="text-sm font-medium text-ink">{String(item[titleField] ?? "")}</p>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => { setEditing({ section, action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+                  <button onClick={() => { setEditing({ section, action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
                     <Pencil size={14} />
                   </button>
-                  <button onClick={() => handleDelete(section, i)} className="text-gray-400 hover:text-red-500">
+                  <button onClick={() => handleDelete(section, i)} className="text-ink-muted hover:text-ink">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -143,8 +143,8 @@ export default function ResumeEditPage() {
                   <div className="mt-2 space-y-2">
                     <EditableItemForm value={drafted as Record<string, unknown>} onChange={setDrafted} />
                     <div className="flex gap-2">
-                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                      <button onClick={() => handleConfirm(section)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
+                      <button onClick={() => handleConfirm(section)} className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80">Confirm</button>
                     </div>
                   </div>
                 )
@@ -166,7 +166,7 @@ export default function ResumeEditPage() {
           ) : (
             <div className="mt-3 space-y-3">
               {(drafted as Record<string, unknown>[]).map((draftItem, i) => (
-                <div key={i} className="bg-surface rounded-lg p-3">
+                <div key={i} className="bg-surface p-3">
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
                       <EditableItemForm
@@ -176,7 +176,7 @@ export default function ResumeEditPage() {
                     </div>
                     <button
                       onClick={() => setDrafted((drafted as Record<string, unknown>[]).filter((_, j) => j !== i))}
-                      className="text-gray-400 hover:text-red-500 shrink-0"
+                      className="text-ink-muted hover:text-ink shrink-0"
                       title="Remove this drafted item"
                     >
                       <Trash2 size={14} />
@@ -185,11 +185,11 @@ export default function ResumeEditPage() {
                 </div>
               ))}
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
                 <button
                   onClick={() => handleConfirm(section)}
                   disabled={(drafted as Record<string, unknown>[]).length === 0}
-                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                  className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ink"
                 >
                   Confirm
                 </button>
@@ -199,9 +199,9 @@ export default function ResumeEditPage() {
         ) : (
           <button
             onClick={() => { setEditing({ section, action: "add" }); setDrafted(null); setApplyError(""); }}
-            className="mt-3 flex items-center gap-1 text-xs text-accent hover:underline"
+            className="mt-3 flex items-center gap-1 text-xs text-ink hover:underline"
           >
-            <Plus size={13} /> Add new
+            <Plus size={13} /> add new
           </button>
         )}
       </section>
@@ -212,19 +212,19 @@ export default function ResumeEditPage() {
     const skills = resume?.skills ?? {};
     return (
       <section key="skills">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Skills</h2>
+        <h2 className="text-sm font-bold text-ink-muted mb-2">skills</h2>
         <div className="space-y-2">
           {Object.entries(skills).map(([group, list]) => (
-            <div key={group} className="bg-surface rounded-lg p-3">
-              <p className="text-xs font-medium text-gray-500 mb-1">{group}</p>
+            <div key={group} className="bg-surface p-3">
+              <p className="text-xs font-medium text-ink-muted mb-1">{group}</p>
               <div className="flex flex-wrap gap-1.5">
                 {list.map(skill => (
-                  <span key={skill} className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700">
+                  <span key={skill} className="flex items-center gap-1 bg-surface border border-rule-soft px-2 py-0.5 text-xs text-ink">
                     {skill}
-                    <button onClick={() => { setEditing({ section: "skills", action: "edit", group, skill }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+                    <button onClick={() => { setEditing({ section: "skills", action: "edit", group, skill }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
                       <Pencil size={11} />
                     </button>
-                    <button onClick={() => handleDeleteSkill(group, skill)} className="text-gray-400 hover:text-red-500">
+                    <button onClick={() => handleDeleteSkill(group, skill)} className="text-ink-muted hover:text-ink">
                       <Trash2 size={11} />
                     </button>
                   </span>
@@ -244,8 +244,8 @@ export default function ResumeEditPage() {
                   <div className="mt-2 space-y-2">
                     <EditableItemForm value={drafted as Record<string, unknown>} onChange={setDrafted} />
                     <div className="flex gap-2">
-                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                      <button onClick={() => handleConfirmSkillEdit()} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                      <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
+                      <button onClick={() => handleConfirmSkillEdit()} className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80">Confirm</button>
                     </div>
                   </div>
                 )
@@ -267,7 +267,7 @@ export default function ResumeEditPage() {
           ) : (
             <div className="mt-3 space-y-3">
               {(drafted as { group: string; skill: string }[]).map((draftItem, i) => (
-                <div key={i} className="bg-surface rounded-lg p-3">
+                <div key={i} className="bg-surface p-3">
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
                       <EditableItemForm
@@ -277,7 +277,7 @@ export default function ResumeEditPage() {
                     </div>
                     <button
                       onClick={() => setDrafted((drafted as { group: string; skill: string }[]).filter((_, j) => j !== i))}
-                      className="text-gray-400 hover:text-red-500 shrink-0"
+                      className="text-ink-muted hover:text-ink shrink-0"
                       title="Remove this drafted item"
                     >
                       <Trash2 size={14} />
@@ -286,11 +286,11 @@ export default function ResumeEditPage() {
                 </div>
               ))}
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
                 <button
                   onClick={() => handleConfirm("skills")}
                   disabled={(drafted as { group: string; skill: string }[]).length === 0}
-                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                  className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ink"
                 >
                   Confirm
                 </button>
@@ -300,9 +300,9 @@ export default function ResumeEditPage() {
         ) : (
           <button
             onClick={() => { setEditing({ section: "skills", action: "add" }); setDrafted(null); setApplyError(""); }}
-            className="mt-3 flex items-center gap-1 text-xs text-accent hover:underline"
+            className="mt-3 flex items-center gap-1 text-xs text-ink hover:underline"
           >
-            <Plus size={13} /> Add new
+            <Plus size={13} /> add new
           </button>
         )}
       </section>
@@ -348,15 +348,15 @@ export default function ResumeEditPage() {
     const items = resume?.languages ?? [];
     return (
       <section key="languages">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Languages</h2>
+        <h2 className="text-sm font-bold text-ink-muted mb-2">languages</h2>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {items.map((lang, i) => (
-            <span key={lang} className="flex items-center gap-1 bg-surface border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700">
+            <span key={lang} className="flex items-center gap-1 bg-surface border border-rule-soft px-2 py-0.5 text-xs text-ink">
               {lang}
-              <button onClick={() => { setEditing({ section: "languages", action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+              <button onClick={() => { setEditing({ section: "languages", action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
                 <Pencil size={11} />
               </button>
-              <button onClick={() => handleDelete("languages", i)} className="text-gray-400 hover:text-red-500">
+              <button onClick={() => handleDelete("languages", i)} className="text-ink-muted hover:text-ink">
                 <Trash2 size={11} />
               </button>
             </span>
@@ -377,8 +377,8 @@ export default function ResumeEditPage() {
             <div className="mb-2 space-y-2">
               <EditableItemForm value={drafted as string} onChange={setDrafted} />
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                <button onClick={() => handleConfirm("languages")} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
+                <button onClick={() => handleConfirm("languages")} className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80">Confirm</button>
               </div>
             </div>
           )
@@ -396,11 +396,11 @@ export default function ResumeEditPage() {
             <div className="space-y-2">
               <EditableItemForm value={(drafted as string[]).join("\n")} onChange={v => setDrafted((v as string).split("\n"))} />
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
                 <button
                   onClick={() => handleConfirm("languages")}
                   disabled={(drafted as string[]).filter(s => s.trim() !== "").length === 0}
-                  className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                  className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ink"
                 >
                   Confirm
                 </button>
@@ -411,9 +411,9 @@ export default function ResumeEditPage() {
           !(editing?.section === "languages" && editing.action === "edit") && (
             <button
               onClick={() => { setEditing({ section: "languages", action: "add" }); setDrafted(null); setApplyError(""); }}
-              className="flex items-center gap-1 text-xs text-accent hover:underline"
+              className="flex items-center gap-1 text-xs text-ink hover:underline"
             >
-              <Plus size={13} /> Add new
+              <Plus size={13} /> add new
             </button>
           )
         )}
@@ -440,9 +440,9 @@ export default function ResumeEditPage() {
     return (
       <section key={fieldKey}>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</h2>
+          <h2 className="text-sm font-bold text-ink-muted mb-1">{label}</h2>
           {!isEditingThis && (
-            <button onClick={() => { setEditing({ section: fieldKey, action: "edit" }); setDrafted(null); setApplyError(""); }} className="text-gray-400 hover:text-gray-700">
+            <button onClick={() => { setEditing({ section: fieldKey, action: "edit" }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
               <Pencil size={13} />
             </button>
           )}
@@ -459,13 +459,13 @@ export default function ResumeEditPage() {
             <div className="space-y-2">
               <EditableItemForm value={drafted as string} onChange={setDrafted} />
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Cancel</button>
-                <button onClick={() => handleScalarConfirm(fieldKey)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">Confirm</button>
+                <button onClick={() => { setEditing(null); setDrafted(null); setApplyError(""); }} className="text-xs text-ink-muted border border-rule-soft px-3 py-1.5 hover:bg-paper">Cancel</button>
+                <button onClick={() => handleScalarConfirm(fieldKey)} className="text-xs bg-ink text-paper px-3 py-1.5 hover:bg-ink/80">Confirm</button>
               </div>
             </div>
           )
         ) : (
-          <p className="text-sm text-gray-700">{value || <span className="text-gray-400">(empty)</span>}</p>
+          <p className="text-sm text-ink">{value || <span className="text-ink-muted">(empty)</span>}</p>
         )}
       </section>
     );
@@ -488,30 +488,30 @@ export default function ResumeEditPage() {
 
   useEffect(() => { loadResume(); }, [loadResume]);
 
-  if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (!resume) return <p className="text-sm text-gray-400">Loading...</p>;
+  if (error) return <p className="text-sm text-ink">{error}</p>;
+  if (!resume) return <p className="text-sm text-ink-muted">Loading...</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <Link href={`/profile/${slug}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800">
+        <Link href={`/profile/${slug}`} className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeft size={14} />
           Back to {resume.name ?? slug}
         </Link>
         <button
           onClick={() => setShowReplace(true)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-ink-muted border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
         >
           <Upload size={13} />
-          Replace Resume
+          replace resume
         </button>
       </div>
 
-      <h1 className="text-xl font-bold text-gray-900">Edit Resume</h1>
+      <h1 className="text-xl font-bold text-ink">edit resume</h1>
 
       {applyError && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3">
-          <p className="text-sm text-red-700">{applyError}</p>
+        <div className=" bg-red/10 border border-red p-3">
+          <p className="text-sm text-ink">{applyError}</p>
         </div>
       )}
 
@@ -522,7 +522,7 @@ export default function ResumeEditPage() {
       {renderListObjectSection("certifications")}
       {renderLanguagesSection()}
       <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact</h2>
+        <h2 className="text-sm font-bold text-ink-muted mb-1">contact</h2>
         <div className="space-y-3">
           {renderScalarField("designation", "Designation")}
           {renderScalarField("work_right", "Work Right")}

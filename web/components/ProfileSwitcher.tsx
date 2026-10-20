@@ -83,27 +83,27 @@ export function ProfileSwitcher() {
       <div className="relative">
         <button
           onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-2 rounded-full border border-warm-border bg-cream px-3 py-1.5 hover:bg-white transition-colors"
+          className="flex items-center gap-2 border-[1.5px] border-ink bg-paper px-2 py-1 hover:bg-surface transition-colors"
         >
-          <span className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-white shrink-0">
+          <span className="w-6 h-6 bg-ink flex items-center justify-center text-xs font-bold text-paper shrink-0">
             {initials}
           </span>
-          <span className="text-sm font-medium text-navy max-w-24 truncate">{active?.name ?? "No profile"}</span>
-          <ChevronDown size={13} className="text-muted" />
+          <span className="text-sm font-medium text-ink max-w-24 truncate">{active?.name ?? "No profile"}</span>
+          <ChevronDown size={13} className="text-ink-muted" />
         </button>
 
         {open && (
-          <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-lg border border-warm-border py-1.5 z-50">
+          <div className="absolute top-full right-0 mt-2 w-52 bg-surface border-[1.5px] border-ink py-1.5 z-50">
             {profiles.map(p => (
               <div key={p.slug} className="flex items-center group">
                 <button
                   onClick={() => switchTo(p)}
-                  className={`flex items-center gap-2 flex-1 px-3 py-2 text-sm transition-colors hover:bg-cream ${
-                    active?.slug === p.slug ? "text-accent font-medium" : "text-navy"
+                  className={`flex items-center gap-2 flex-1 px-3 py-2 text-sm transition-colors hover:bg-paper ${
+ active?.slug === p.slug ? "text-ink font-bold" : "text-ink"
                   }`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    active?.slug === p.slug ? "bg-accent-light text-accent" : "bg-cream text-muted"
+                  <span className={`w-6 h-6 flex items-center justify-center text-xs font-bold ${
+                    active?.slug === p.slug ? "bg-ink text-paper" : "bg-paper text-ink-muted"
                   }`}>
                     {p.name.slice(0, 1).toUpperCase()}
                   </span>
@@ -112,7 +112,7 @@ export function ProfileSwitcher() {
                 <button
                   onClick={e => handleDelete(p, e)}
                   disabled={deleting === p.slug}
-                  className="pr-3 text-warm-border hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
+                  className="pr-3 text-rule-soft hover:text-ink transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
                   title={`Delete ${p.name}`}
                 >
                   <Trash2 size={13} />
@@ -120,23 +120,23 @@ export function ProfileSwitcher() {
               </div>
             ))}
 
-            <div className="border-t border-warm-border mt-1 pt-1 mx-1">
+            <div className="border-t border-rule-soft mt-1 pt-1 mx-1">
               {active && (
                 <Link
                   href={`/profile/${active.slug}`}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-muted hover:bg-cream hover:text-navy rounded-xl transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-ink-muted hover:bg-paper hover:text-ink transition-colors"
                 >
                   <User size={12} />
-                  View Resume Data
+                  view resume data
                 </Link>
               )}
               <button
                 onClick={() => { setShowAdd(true); setOpen(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-accent font-medium hover:bg-accent-light rounded-xl transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ink font-medium hover:bg-paper transition-colors"
               >
                 <Plus size={12} />
-                Add Profile
+                add profile
               </button>
             </div>
           </div>
