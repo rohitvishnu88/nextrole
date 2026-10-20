@@ -2,187 +2,142 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import * as api from "@/lib/api";
-import type { Application, TailorHistoryEntry } from "@/lib/types";
+import type { Application, Profile, TailorHistoryEntry } from "@/lib/types";
 import { StatusMarker } from "@/components/ui/StatusMarker";
+import { PageCircle } from "@/components/ui/PageCircle";
 import { useActiveProfile } from "@/lib/useActiveProfile";
-import { Wand2, Briefcase, ArrowRight, Trophy, Search, Download, FileText } from "lucide-react";
+import { greeting } from "@/lib/greeting";
+import { ArrowRight, Download, FileText, Wand2 } from "lucide-react";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="border-l-[3px] border-ink px-4 py-1">
+      <p className="text-4xl font-bold leading-none">{value}</p>
+      <p className="text-sm mt-1">{label}</p>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const profile = useActiveProfile();
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [tailorHistory, setTailorHistory] = useState<TailorHistoryEntry[]>([]);
 
   useEffect(() => {
-    if (!profile) return;
-    api.listApplications(profile).then(setApps).catch(() => {});
-  }, [profile]);
+    api.listProfiles().then(setProfiles).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
+    api.listApplications(profile).then(setApps).catch(() => {});
     api.getTailorHistory(profile).then(setTailorHistory).catch(() => {});
   }, [profile]);
 
-  const counts = {
-    total:     apps.length,
-    interview: apps.filter(a => a.status === "interview").length,
-    offer:     apps.filter(a => a.status === "offer").length,
-  };
+  const name = profiles.find(p => p.slug === profile)?.name;
+  const active = apps.filter(a => a.status !== "rejected" && a.status !== "offer").length;
+  const recent = [...apps].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-ink">dashboard</h1>
-        <p className="text-sm text-ink-muted mt-1">Your job search, at a glance</p>
-      </div>
+    <div className="space-y-12">
+      <section className="relative overflow-hidden -mx-6 px-6 -mt-10 pt-10 pb-2 min-h-[260px]">
+        <PageCircle colour="blue" />
+        <div className="relative space-y-4">
+          <h1 className="text-5xl md:text-6xl font-bold leading-none">
+            {greeting(new Date())}{name ? <>, {name}</> : null}
+          </h1>
+          <p className="text-base">
+            {active} active application{active !== 1 ? "s" : ""}.
+          </p>
+          <Link
+            href="/tailor"
+            className="inline-flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-4 py-2 text-sm font-bold transition-colors"
+          >
+            <Wand2 size={14} />
+            tailor a resume
+          </Link>
+        </div>
+      </section>
 
-      {/* Hero gradient card */}
-      <div className="relative overflow-hidden bg-ink p-8 text-paper">
-        {/* Decorative circles */}
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-ink opacity-20" />
-        <div className="absolute -bottom-20 -right-4 w-48 h-48 bg-surface opacity-5" />
-        <div className="absolute top-4 right-48 w-24 h-24 bg-ink opacity-10" />
+      <section className="grid grid-cols-3 gap-0">
+        <Stat value={apps.length} label="applications" />
+        <Stat value={apps.filter(a => a.status === "interview").length} label="interviews" />
+        <Stat value={apps.filter(a => a.status === "offer").length} label="offers" />
+      </section>
 
-        <div className="relative flex items-center justify-between">
+      <section>
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-xl font-bold">recent applications</h2>
+          <Link href="/applications" className="flex items-center gap-1 text-sm hover:underline">
+            view all <ArrowRight size={13} />
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className="border-t-[1.5px] border-ink py-6 text-sm text-ink-muted">
+            Tailor a resume or add an application to get started.
+          </p>
+        ) : (
           <div>
-            <p className="text-paper/70 text-xs font-bold mb-2">AI-powered</p>
-            <h2 className="text-2xl font-bold mb-2">ready to tailor your next resume?</h2>
-            <p className="text-paper/70 text-sm max-w-xs leading-relaxed">
-              Paste a job URL and Claude tailors your resume in under a minute — cover letter included.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 shrink-0 ml-8">
-            <Link
-              href="/tailor"
-              className="flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
-            >
-              <Wand2 size={15} />
-              tailor a resume
-            </Link>
-            <Link
-              href="/search-brief"
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-paper px-5 py-2.5 text-sm font-medium transition-colors"
-            >
-              <Search size={14} />
-              view search brief
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "Total Applications", value: counts.total,     icon: Briefcase,  color: "bg-blue/10 text-ink" },
-          { label: "Interviews",         value: counts.interview, icon: ArrowRight,  color: "bg-yellow/10 text-ink" },
-          { label: "Offers",             value: counts.offer,     icon: Trophy,      color: "bg-blue/10 text-ink" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-surface border border-rule-soft p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-3xl font-bold text-ink">{value}</p>
-                <p className="text-sm text-ink-muted mt-1">{label}</p>
-              </div>
-              <span className={`w-10 h-10 flex items-center justify-center ${color}`}>
-                <Icon size={18} />
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-surface border border-rule-soft p-6 flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-ink">tailor your resume</h2>
-          <p className="text-sm text-ink-muted mt-0.5">Paste a job URL or JD and get a tailored PDF + cover letter</p>
-        </div>
-        <Link
-          href="/tailor"
-          className="flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-5 py-2.5 text-sm font-bold transition-colors shrink-0 ml-4"
-        >
-          <Wand2 size={15} />
-          tailor a resume
-        </Link>
-      </div>
-
-      {apps.length > 0 && (
-        <div className="bg-surface border border-rule-soft overflow-hidden">
-          <div className="px-6 py-4 border-b border-rule-soft flex items-center justify-between">
-            <h2 className="font-bold text-ink">recent applications</h2>
-            <Link href="/applications" className="text-xs text-ink font-medium hover:underline">view all →</Link>
-          </div>
-          <div className="divide-y divide-rule-soft">
-            {apps.slice(0, 5).map(app => (
-              <div key={app.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-paper transition-colors">
-                <div>
-                  <p className="text-sm font-medium text-ink">{app.job_title}</p>
-                  <p className="text-xs text-ink-muted mt-0.5">{app.company}{app.location ? ` · ${app.location}` : ""}</p>
-                </div>
+            {recent.map(app => (
+              <div key={app.id} className="grid grid-cols-[2fr_1fr_120px] items-center gap-4 py-3 border-t-[1.5px] border-ink text-sm">
+                <span>
+                  <span className="font-medium">{app.job_title}</span>
+                  <span className="text-ink-muted"> · {app.company}</span>
+                </span>
+                <span className="text-ink-muted">{formatDate(app.applied_date ?? app.updated_at)}</span>
                 <StatusMarker status={app.status} />
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {profile && apps.length === 0 && (
-        <div className="bg-surface border border-rule-soft p-12 text-center">
-          <p className="text-ink-muted text-sm">No applications yet.</p>
-          <p className="text-ink-muted text-xs mt-1">Tailor a resume or add an application to get started.</p>
-        </div>
-      )}
+        )}
+      </section>
 
       {tailorHistory.length > 0 && (
-        <div className="bg-surface border border-rule-soft overflow-hidden">
-          <div className="px-6 py-4 border-b border-rule-soft">
-            <h2 className="font-bold text-ink">tailored resumes</h2>
-          </div>
-          <div className="divide-y divide-rule-soft">
-            {tailorHistory.slice(0, 5).map(entry => (
-              <div key={entry.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-paper transition-colors gap-4">
-                <div className="min-w-0">
-                  {entry.job_url ? (
-                    <a
-                      href={entry.job_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-ink hover:underline truncate block"
-                    >
-                      {entry.job_url}
-                    </a>
-                  ) : (
-                    <p className="text-sm font-medium text-ink">Tailored resume</p>
-                  )}
-                  <p className="text-xs text-ink-muted mt-0.5">
-                    {new Date(entry.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {entry.pdf_available && (
-                    <a
-                      href={`/api/tailor/history/${profile}/${entry.id}/pdf`}
-                      download
-                      title="Download PDF"
-                      className="flex items-center gap-1 text-xs text-ink border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
-                    >
-                      <Download size={13} />
-                      pdf
-                    </a>
-                  )}
-                  {entry.cover_letter_available && (
-                    <a
-                      href={`/api/tailor/history/${profile}/${entry.id}/cover-letter`}
-                      download
-                      title="Download Cover Letter"
-                      className="flex items-center gap-1 text-xs text-ink border border-rule-soft px-2.5 py-1.5 hover:bg-paper transition-colors"
-                    >
-                      <FileText size={13} />
-                      cover letter
-                    </a>
-                  )}
-                </div>
+        <section>
+          <h2 className="text-xl font-bold mb-2">tailored resumes</h2>
+          {tailorHistory.slice(0, 5).map(entry => (
+            <div key={entry.id} className="flex items-center justify-between gap-4 py-3 border-t border-rule-soft">
+              <div className="min-w-0">
+                {entry.job_url ? (
+                  <a href={entry.job_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline truncate block">
+                    {entry.job_url}
+                  </a>
+                ) : (
+                  <p className="text-sm font-medium">tailored resume</p>
+                )}
+                <p className="text-xs text-ink-muted mt-0.5">
+                  {new Date(entry.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {entry.pdf_available && (
+                  <a
+                    href={`/api/tailor/history/${profile}/${entry.id}/pdf`}
+                    download
+                    className="flex items-center gap-1 text-xs border-[1.5px] border-ink px-2.5 py-1.5 hover:bg-ink hover:text-paper transition-colors"
+                  >
+                    <Download size={13} />
+                    pdf
+                  </a>
+                )}
+                {entry.cover_letter_available && (
+                  <a
+                    href={`/api/tailor/history/${profile}/${entry.id}/cover-letter`}
+                    download
+                    className="flex items-center gap-1 text-xs border-[1.5px] border-ink px-2.5 py-1.5 hover:bg-ink hover:text-paper transition-colors"
+                  >
+                    <FileText size={13} />
+                    cover letter
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </section>
       )}
     </div>
   );

@@ -105,7 +105,7 @@ export default function SearchBriefPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="relative overflow-hidden -mx-6 px-6 -mt-10 pt-10 pb-6 flex items-start justify-between">
+      <div className="relative overflow-hidden -mx-6 px-6 -mt-10 pt-10 pb-6 min-h-[240px] flex items-start justify-between">
         <PageCircle colour="yellow" />
         <div className="relative">
           <h1 className="text-5xl font-bold text-ink leading-none">search brief</h1>
@@ -194,7 +194,7 @@ export default function SearchBriefPage() {
                             if (e.key === "Escape") { setAddingCategory(null); setNewLabel(""); }
                           }}
                           placeholder="Label…"
-                          className="text-sm border border-rule-soft px-3 py-1.5 text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink w-32"
+                          className="text-sm border border-rule-soft px-3 py-1.5 text-ink placeholder-ink-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink w-32"
                         />
                         <button
                           onClick={() => handleAdd(cat)}

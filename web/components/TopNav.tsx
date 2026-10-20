@@ -21,14 +21,14 @@ export function TopNav() {
           nextrole.
         </Link>
 
-        <nav className="flex items-center gap-5">
+        <nav className="flex items-center gap-4 min-w-0 overflow-x-auto">
           {nav.map(({ href, label }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`text-sm py-1 border-b-2 transition-colors ${
+                className={`text-sm py-1 border-b-2 whitespace-nowrap transition-colors ${
                   active ? "border-ink text-ink font-bold" : "border-transparent text-ink-muted hover:text-ink"
                 }`}
               >

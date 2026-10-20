@@ -65,7 +65,7 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full border-[1.5px] border-ink px-3 py-2 text-sm text-ink placeholder-gray-400 bg-surface focus:outline-none focus:ring-2 focus:ring-ink"
+                className="w-full border-[1.5px] border-ink px-3 py-2 text-sm text-ink placeholder-ink-muted bg-surface focus:outline-none focus:ring-2 focus:ring-ink"
                 placeholder="e.g. Priya"
               />
               {name && <p className="text-xs text-ink-muted mt-1">Slug: {slug}</p>}
