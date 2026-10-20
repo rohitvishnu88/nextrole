@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { History, Eye, RotateCcw } from "lucide-react";
 import * as api from "@/lib/api";
 import type { ResumeVersionSummary, ResumeVersion } from "@/lib/types";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Props {
   slug: string;
@@ -14,6 +15,7 @@ export function HistoryPanel({ slug, onRestored }: Props) {
   const [versions, setVersions] = useState<ResumeVersionSummary[]>([]);
   const [viewing, setViewing] = useState<ResumeVersion | null>(null);
   const [error, setError] = useState("");
+  const [confirmingRestoreId, setConfirmingRestoreId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -38,8 +40,8 @@ export function HistoryPanel({ slug, onRestored }: Props) {
     }
   }
 
-  async function handleRestore(versionId: string) {
-    if (!confirm("Restore this version? The current resume will be saved to history first.")) return;
+  async function doRestore(versionId: string) {
+    setConfirmingRestoreId(null);
     try {
       await api.restoreResumeVersion(slug, versionId);
       setError("");
@@ -77,7 +79,7 @@ export function HistoryPanel({ slug, onRestored }: Props) {
                 <button onClick={() => handleView(v.id)} className="text-gray-400 hover:text-gray-700">
                   <Eye size={14} />
                 </button>
-                <button onClick={() => handleRestore(v.id)} className="text-gray-400 hover:text-accent">
+                <button onClick={() => setConfirmingRestoreId(v.id)} className="text-gray-400 hover:text-accent">
                   <RotateCcw size={14} />
                 </button>
               </div>
@@ -91,7 +93,7 @@ export function HistoryPanel({ slug, onRestored }: Props) {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-xl mx-4 p-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-800">{viewing.change_summary}</p>
-              <button onClick={() => handleRestore(viewing.id)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">
+              <button onClick={() => setConfirmingRestoreId(viewing.id)} className="text-xs bg-accent text-white rounded-lg px-3 py-1.5 hover:bg-accent/90">
                 Restore this version
               </button>
             </div>
@@ -105,6 +107,15 @@ export function HistoryPanel({ slug, onRestored }: Props) {
             </pre>
           </div>
         </div>
+      )}
+
+      {confirmingRestoreId && (
+        <ConfirmDialog
+          message="Restore this version? The current resume will be saved to history first."
+          confirmLabel="Restore"
+          onConfirm={() => doRestore(confirmingRestoreId)}
+          onCancel={() => setConfirmingRestoreId(null)}
+        />
       )}
     </div>
   );

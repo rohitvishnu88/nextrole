@@ -5,6 +5,8 @@ import Link from "next/link";
 import * as api from "@/lib/api";
 import { ArrowLeft, Upload, Pencil, Trash2, Plus } from "lucide-react";
 import { ReplaceResumeModal } from "@/components/ReplaceResumeModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { setActiveProfile } from "@/lib/useActiveProfile";
 import { SectionInstructionBox } from "@/components/resume-edit/SectionInstructionBox";
 import { EditableItemForm } from "@/components/resume-edit/EditableItemForm";
 import { HistoryPanel } from "@/components/resume-edit/HistoryPanel";
@@ -33,6 +35,7 @@ export default function ResumeEditPage() {
   const [showReplace, setShowReplace] = useState(false);
   const [editing, setEditing] = useState<{ section: string; action: "add" | "edit"; itemIndex?: number; group?: string; skill?: string } | null>(null);
   const [drafted, setDrafted] = useState<unknown[] | unknown | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const TITLE_FIELD: Record<string, string> = { experience: "title", education: "degree", certifications: "name" };
   const SECTION_TITLES: Record<string, string> = { experience: "Experience", education: "Education", certifications: "Certifications" };
@@ -89,16 +92,21 @@ export default function ResumeEditPage() {
     }
   }
 
-  async function handleDelete(section: string, itemIndex: number) {
+  function handleDelete(section: string, itemIndex: number) {
     if (!slug) return;
-    if (!confirm("Delete this entry?")) return;
-    try {
-      await api.applyResumeSection(slug, section, { action: "delete", item_index: itemIndex });
-      setApplyError("");
-      loadResume();
-    } catch (err) {
-      setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
-    }
+    setConfirmingDelete({
+      message: "Delete this entry?",
+      onConfirm: async () => {
+        setConfirmingDelete(null);
+        try {
+          await api.applyResumeSection(slug, section, { action: "delete", item_index: itemIndex });
+          setApplyError("");
+          loadResume();
+        } catch (err) {
+          setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
+        }
+      },
+    });
   }
 
   function renderListObjectSection(section: "experience" | "education" | "certifications") {
@@ -301,16 +309,21 @@ export default function ResumeEditPage() {
     );
   }
 
-  async function handleDeleteSkill(group: string, skill: string) {
+  function handleDeleteSkill(group: string, skill: string) {
     if (!slug) return;
-    if (!confirm(`Delete "${skill}" from ${group}?`)) return;
-    try {
-      await api.applyResumeSection(slug, "skills", { action: "delete", group, skill });
-      setApplyError("");
-      loadResume();
-    } catch (err) {
-      setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
-    }
+    setConfirmingDelete({
+      message: `Delete "${skill}" from ${group}?`,
+      onConfirm: async () => {
+        setConfirmingDelete(null);
+        try {
+          await api.applyResumeSection(slug, "skills", { action: "delete", group, skill });
+          setApplyError("");
+          loadResume();
+        } catch (err) {
+          setApplyError(`Failed to delete entry: ${err instanceof Error ? err.message : "unknown error"}`);
+        }
+      },
+    });
   }
 
   async function handleConfirmSkillEdit() {
@@ -468,6 +481,11 @@ export default function ResumeEditPage() {
       .catch(() => setError("No resume data found for this profile."));
   }, [slug]);
 
+  // Set synchronously on mount, before any network round-trip - see the same
+  // note in the read-only profile page for why this must not live inside the
+  // getResume `.then()`.
+  useEffect(() => { if (slug) setActiveProfile(slug); }, [slug]);
+
   useEffect(() => { loadResume(); }, [loadResume]);
 
   if (error) return <p className="text-sm text-red-500">{error}</p>;
@@ -521,6 +539,14 @@ export default function ResumeEditPage() {
           slug={slug}
           onClose={() => setShowReplace(false)}
           onReplaced={loadResume}
+        />
+      )}
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          message={confirmingDelete.message}
+          onConfirm={confirmingDelete.onConfirm}
+          onCancel={() => setConfirmingDelete(null)}
         />
       )}
     </div>

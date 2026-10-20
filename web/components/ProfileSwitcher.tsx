@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronDown, Plus, Trash2, User } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import type { Profile } from "@/lib/types";
 import { AddProfileModal } from "./AddProfileModal";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { ACTIVE_PROFILE_STORAGE_KEY, ACTIVE_PROFILE_EVENT, setActiveProfile } from "@/lib/useActiveProfile";
 
-const STORAGE_KEY = "resume_active_profile";
+// Matches /profile/{slug} or /profile/{slug}/edit, capturing the /edit suffix if present.
+const PROFILE_PATH_RE = /^\/profile\/[^/]+(\/edit)?$/;
 
 export function ProfileSwitcher() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -14,32 +18,58 @@ export function ProfileSwitcher() {
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<Profile | null>(null);
+  const profilesRef = useRef<Profile[]>([]);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const load = useCallback(async () => {
     const list = await api.listProfiles();
+    profilesRef.current = list;
     setProfiles(list);
-    const savedSlug = localStorage.getItem(STORAGE_KEY);
+    const savedSlug = localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY);
     const found = list.find(p => p.slug === savedSlug) ?? list[0] ?? null;
     setActive(found);
-    if (found) localStorage.setItem(STORAGE_KEY, found.slug);
+    if (found) localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, found.slug);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    function handleChanged(e: Event) {
+      const slug = (e as CustomEvent<string>).detail;
+      const found = profilesRef.current.find(p => p.slug === slug) ?? null;
+      if (found) setActive(found);
+    }
+    window.addEventListener(ACTIVE_PROFILE_EVENT, handleChanged);
+    return () => window.removeEventListener(ACTIVE_PROFILE_EVENT, handleChanged);
+  }, []);
+
   function switchTo(p: Profile) {
     setActive(p);
-    localStorage.setItem(STORAGE_KEY, p.slug);
     setOpen(false);
-    window.dispatchEvent(new CustomEvent("profile-changed", { detail: p.slug }));
+    setActiveProfile(p.slug);
+
+    // If currently viewing a profile-scoped page, follow the switch to the
+    // same page for the newly selected profile instead of leaving the URL
+    // pointing at the old one.
+    const match = pathname.match(PROFILE_PATH_RE);
+    if (match) {
+      router.push(`/profile/${p.slug}${match[1] ?? ""}`);
+    }
   }
 
-  async function handleDelete(p: Profile, e: React.MouseEvent) {
+  function handleDelete(p: Profile, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm(`Delete profile "${p.name}"? This cannot be undone.`)) return;
+    setConfirmingDelete(p);
+  }
+
+  async function doDelete(p: Profile) {
+    setConfirmingDelete(null);
     setDeleting(p.slug);
     try {
       await api.deleteProfile(p.slug);
-      if (active?.slug === p.slug) localStorage.removeItem(STORAGE_KEY);
+      if (active?.slug === p.slug) localStorage.removeItem(ACTIVE_PROFILE_STORAGE_KEY);
       await load();
     } finally {
       setDeleting(null);
@@ -117,12 +147,20 @@ export function ProfileSwitcher() {
         <AddProfileModal
           onClose={() => setShowAdd(false)}
           onCreated={(slug) => {
-            localStorage.setItem(STORAGE_KEY, slug);
+            localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, slug);
             setShowAdd(false);
             load().then(() => {
-              window.dispatchEvent(new CustomEvent("profile-changed", { detail: slug }));
+              setActiveProfile(slug);
             });
           }}
+        />
+      )}
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          message={`Delete profile "${confirmingDelete.name}"? This cannot be undone.`}
+          onConfirm={() => doDelete(confirmingDelete)}
+          onCancel={() => setConfirmingDelete(null)}
         />
       )}
     </>
