@@ -181,6 +181,51 @@ Same steps as manual setup above: clone, set API keys, run `setup` and `start`. 
 
 ---
 
+## Sharing with friends (Tailscale Funnel)
+
+Runs the app on your Mac and publishes it at a fixed `https://<your-mac>.<tailnet>.ts.net` address. Free, no open router ports, and only the Next.js frontend is exposed (it forwards `/api` to FastAPI on localhost). The app is reachable only while your Mac is awake and `serve.sh` is running.
+
+**1. Tailscale.** Install it (`brew install --cask tailscale` or the Mac App Store), open it and sign in. Find your address:
+
+```bash
+tailscale status --json | python3 -c "import sys, json; print(json.load(sys.stdin)['Self']['DNSName'].rstrip('.'))"
+```
+
+**2. Google OAuth client.** In Google Cloud Console → Credentials → your OAuth client, add the authorised redirect URI `https://<your-ts-net-address>/api/auth/callback` (keep `http://localhost:3000/api/auth/callback` for local development). On the OAuth consent screen, add each friend as a test user.
+
+**3. Settings file**, outside the repo so secrets never reach git:
+
+```bash
+mkdir -p ~/.config/nextrole && touch ~/.config/nextrole/env && chmod 600 ~/.config/nextrole/env && open -e ~/.config/nextrole/env
+```
+
+Contents (replace every value; generate `SESSION_SECRET` once with `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` and keep it fixed, or everyone is signed out on restart):
+
+```
+ANTHROPIC_API_KEY=...
+TAVILY_API_KEY=...
+SESSION_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+OWNER_EMAIL=you@gmail.com
+ALLOWED_EMAILS=friend1@gmail.com,friend2@gmail.com
+PUBLIC_BASE_URL=https://<your-ts-net-address>
+```
+
+**4. Run it**, then publish port 3000 (the first `funnel` run asks you to approve Funnel in the Tailscale admin console):
+
+```bash
+./serve.sh
+```
+
+```bash
+tailscale funnel --bg 3000
+```
+
+**Stop sharing:** `tailscale funnel reset`. **Keep the Mac awake** while sharing, e.g. `caffeinate -dims` in another terminal. **Back up** `data/` and `output/` regularly; they hold everyone's profiles, applications and tailored resumes. Use `./start.sh` for local development as before.
+
+---
+
 ## Self-hosting
 
 The app is designed for local use but can be hosted on a server. The Python backend requires a Linux environment with Chromium available for PDF generation (Railway, Fly.io, or a VPS with Docker work well). The Next.js frontend can be deployed to Vercel separately: set `NEXT_PUBLIC_API_URL` to point at your hosted backend.
