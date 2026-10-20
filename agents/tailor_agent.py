@@ -49,7 +49,7 @@ def fetch_job_description(url: str) -> str:
         if result.get("results"):
             content = result["results"][0].get("raw_content", "")
             if content:
-                return content[:4000]
+                return content[:20000]
     except Exception as e:
         print(f"  ⚠️  Tavily extract failed ({e}), falling back to search...")
 
@@ -57,7 +57,7 @@ def fetch_job_description(url: str) -> str:
         results = tavily.search(query=url, max_results=1, search_depth="basic")
         hits = results.get("results", [])
         if hits:
-            return hits[0].get("content", "")[:4000]
+            return hits[0].get("content", "")[:20000]
     except Exception as e:
         print(f"  ⚠️  Search fallback failed: {e}")
 
@@ -95,7 +95,7 @@ def _fetch_with_playwright(url: str) -> str:
                     continue
 
             browser.close()
-            return content[:4000] if content else ""
+            return content[:20000] if content else ""
     except Exception as e:
         print(f"  ⚠️  Playwright fetch failed: {e}")
         return ""
