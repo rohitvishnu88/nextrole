@@ -17,8 +17,8 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setenv("PUBLIC_BASE_URL", "http://localhost:3000")
     import a2a.db as db
     importlib.reload(db)
+    # Not reloaded: other tests override a2a.auth.current_user by identity.
     import a2a.auth as auth
-    importlib.reload(auth)
     return db, auth
 
 
