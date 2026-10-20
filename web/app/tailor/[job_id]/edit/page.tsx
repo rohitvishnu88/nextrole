@@ -98,7 +98,7 @@ export default function EditTailorPage() {
           </p>
         </div>
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/tailor?job=${job_id}`)}
           className="text-sm text-muted hover:text-navy transition-colors mt-1"
         >
           ← Back without saving
@@ -171,7 +171,7 @@ export default function EditTailorPage() {
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex items-center justify-end gap-4">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/tailor?job=${job_id}`)}
           className="text-sm text-muted hover:text-navy transition-colors"
         >
           ← Back without saving

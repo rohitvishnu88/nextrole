@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import * as api from "@/lib/api";
-import type { TailorJob } from "@/lib/types";
+import type { TailorJob, TailoredResume } from "@/lib/types";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { AddApplicationModal } from "@/components/AddApplicationModal";
 import { Wand2, Download, Plus, Pencil } from "lucide-react";
@@ -16,6 +16,15 @@ function TailorPageInner() {
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState("");
   const [showAddToTracker, setShowAddToTracker] = useState(false);
+  const [tailoredResume, setTailoredResume] = useState<TailoredResume | null>(null);
+
+  useEffect(() => {
+    if (job?.status !== "completed") {
+      setTailoredResume(null);
+      return;
+    }
+    api.getTailorData(job.job_id).then(setTailoredResume).catch(() => {});
+  }, [job?.status, job?.job_id]);
 
   // Restore a job when arriving via ?job= — either completed (redirect back from
   // the edit page) or still running (started from the Jobs page's Tailor button).
@@ -127,6 +136,30 @@ function TailorPageInner() {
             }`} />
             <p className="text-sm font-medium text-navy">{job.message}</p>
           </div>
+
+          {job.status === "completed" && tailoredResume && (
+            <div className="space-y-4 pt-1 border-t border-warm-border">
+              <div className="pt-3">
+                <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">Summary</p>
+                <p className="text-sm text-navy leading-relaxed">{tailoredResume.summary}</p>
+              </div>
+              <div className="space-y-3">
+                {tailoredResume.experience.map((exp, i) => (
+                  <div key={i} className="bg-cream rounded-xl p-4">
+                    <p className="text-sm font-semibold text-navy">{exp.title}</p>
+                    <p className="text-xs text-muted mb-2">
+                      {exp.company}{exp.highlight ? ` — ${exp.highlight}` : ""} · {exp.start_date} – {exp.end_date}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {exp.description.map((bullet, j) => (
+                        <li key={j} className="text-xs text-navy/80">{bullet}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {job.status === "completed" && (
             <div className="flex flex-wrap gap-2 pt-1">
