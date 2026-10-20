@@ -10,9 +10,9 @@ const CONFIDENCE_DOT: Record<SignalConfidence, string> = {
 };
 
 const CONFIDENCE_BG: Record<SignalConfidence, string> = {
-  high:   "bg-blue/10 border-blue",
-  medium: "bg-yellow/10 border-yellow",
-  low:    "bg-paper border-rule-soft",
+  high:   "bg-surface border-ink",
+  medium: "bg-surface border-ink",
+  low:    "bg-surface border-rule-soft",
 };
 
 const CONFIDENCE_LABEL: Record<SignalConfidence, string> = {
@@ -37,7 +37,7 @@ export function SignalChip({ signal, onToggle, onDelete }: Props) {
     <div className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 border text-sm font-medium transition-all ${bg}`}>
 
       {/* Confidence dot */}
-      <span className={`w-2 h-2 shrink-0 transition-colors ${
+      <span className={`w-2.5 h-2.5 shrink-0 transition-colors ${
         signal.active ? CONFIDENCE_DOT[signal.confidence] : "bg-rule-soft"
       }`} />
 

@@ -69,7 +69,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink">{resume.name ?? slug} — Resume Data</h1>
+        <h1 className="text-5xl font-bold text-ink leading-none">{resume.name ?? slug} — resume data</h1>
         <div className="flex items-center gap-2">
           <Link
             href={`/profile/${slug}/edit`}

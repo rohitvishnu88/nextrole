@@ -43,7 +43,7 @@ export function QueryPreview({ signals }: Props) {
   const activeCount = signals.filter(s => s.active).length;
 
   return (
-    <div className="bg-surface border border-rule-soft p-5 sticky top-24">
+    <div className="border-t-[1.5px] border-ink pt-5 sticky top-24">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-ink text-sm">live query preview</h3>
         <span className="text-xs text-ink-muted bg-paper px-2 py-0.5 border border-rule-soft">

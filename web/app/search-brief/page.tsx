@@ -5,6 +5,7 @@ import type { SearchBrief, Signal, SignalCategory } from "@/lib/types";
 import { useActiveProfile } from "@/lib/useActiveProfile";
 import { SignalChip } from "@/components/SignalChip";
 import { QueryPreview } from "@/components/QueryPreview";
+import { PageCircle } from "@/components/ui/PageCircle";
 import { RefreshCw, Plus, Loader2 } from "lucide-react";
 
 const CATEGORY_META: Record<SignalCategory, { label: string; description: string }> = {
@@ -95,7 +96,7 @@ export default function SearchBriefPage() {
 
   if (!profile) {
     return (
-      <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
+      <div className="bg-yellow/10 border-l-[3px] border-yellow px-4 py-3 text-sm text-ink">
         Select a profile first.
       </div>
     );
@@ -104,25 +105,26 @@ export default function SearchBriefPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">search brief</h1>
-          <p className="text-sm text-ink-muted mt-1">
+      <div className="relative overflow-hidden -mx-6 px-6 -mt-10 pt-10 pb-6 flex items-start justify-between">
+        <PageCircle colour="yellow" />
+        <div className="relative">
+          <h1 className="text-5xl font-bold text-ink leading-none">search brief</h1>
+          <p className="text-sm text-ink-muted mt-3">
             {brief ? brief.headline : "Generate a brief to see what parameters the job search agent uses"}
           </p>
         </div>
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-4 py-2 text-sm font-bold transition-colors shrink-0"
+          className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-4 py-2 text-sm font-bold transition-colors shrink-0 relative"
         >
           {generating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          {brief ? "Regenerate" : "Generate from Resume"}
+          {brief ? "regenerate" : "generate from resume"}
         </button>
       </div>
 
       {error && (
-        <div className="bg-red/10 border border-red px-5 py-3 text-sm text-ink">{error}</div>
+        <div className="bg-red/10 border-l-[3px] border-red px-3 py-2 text-sm text-ink">{error}</div>
       )}
 
       {loading && (
@@ -133,8 +135,8 @@ export default function SearchBriefPage() {
       )}
 
       {!loading && !brief && !generating && (
-        <div className="bg-surface border border-rule-soft p-12 text-center">
-          <div className="w-12 h-12 bg-blue/10 flex items-center justify-center mx-auto mb-4">
+        <div className="border-t-[1.5px] border-ink pt-5 text-center">
+          <div className="w-12 h-12 bg-ink text-paper flex items-center justify-center mx-auto mb-4">
             <RefreshCw size={20} className="text-ink" />
           </div>
           <p className="text-ink font-bold mb-1">No search brief yet</p>
@@ -145,7 +147,7 @@ export default function SearchBriefPage() {
       )}
 
       {generating && (
-        <div className="bg-surface border border-rule-soft p-12 text-center">
+        <div className="border-t-[1.5px] border-ink pt-5 text-center">
           <Loader2 size={28} className="animate-spin text-ink mx-auto mb-3" />
           <p className="text-ink font-bold">Analysing your resume…</p>
           <p className="text-ink-muted text-sm mt-1">Claude is extracting search signals. This takes ~10 seconds.</p>
@@ -162,7 +164,7 @@ export default function SearchBriefPage() {
               const chips = signalsByCategory(cat);
 
               return (
-                <div key={cat} className="bg-surface border border-rule-soft p-5">
+                <div key={cat} className="border-t-[1.5px] border-ink pt-5">
                   <div className="flex items-baseline justify-between mb-1">
                     <h2 className="font-bold text-ink text-sm">{meta.label}</h2>
                     <span className="text-xs text-ink-muted">

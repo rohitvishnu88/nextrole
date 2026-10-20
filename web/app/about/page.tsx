@@ -5,54 +5,54 @@ function HeroIllustration() {
   return (
     <svg viewBox="0 0 480 320" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       {/* Background blobs */}
-      <circle cx="380" cy="60" r="120" fill="#FEF3E8" opacity="0.6" />
-      <circle cx="100" cy="260" r="90" fill="#E8F5EE" opacity="0.5" />
+      <circle cx="380" cy="60" r="120" fill="#FFFFFF" opacity="0.6" />
+      <circle cx="100" cy="260" r="90" fill="#FFFFFF" opacity="0.5" />
 
       {/* Resume document */}
-      <rect x="60" y="60" width="150" height="200" rx="12" fill="white" stroke="#E8E3D9" strokeWidth="1.5" />
-      <rect x="80" y="90" width="80" height="8" rx="4" fill="#1A1714" opacity="0.8" />
-      <rect x="80" y="108" width="110" height="5" rx="2.5" fill="#6B655C" opacity="0.4" />
-      <rect x="80" y="118" width="90" height="5" rx="2.5" fill="#6B655C" opacity="0.4" />
-      <rect x="80" y="138" width="60" height="5" rx="2.5" fill="#E07A3C" opacity="0.6" />
-      <rect x="80" y="153" width="110" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="80" y="163" width="100" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="80" y="173" width="85" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="80" y="193" width="60" height="5" rx="2.5" fill="#E07A3C" opacity="0.6" />
-      <rect x="80" y="208" width="110" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="80" y="218" width="95" height="4" rx="2" fill="#6B655C" opacity="0.3" />
+      <rect x="60" y="60" width="150" height="200" fill="white" stroke="#D9D7D0" strokeWidth="1.5" />
+      <rect x="80" y="90" width="80" height="8" fill="#000000" opacity="0.8" />
+      <rect x="80" y="108" width="110" height="5" fill="#5A5A57" opacity="0.4" />
+      <rect x="80" y="118" width="90" height="5" fill="#5A5A57" opacity="0.4" />
+      <rect x="80" y="138" width="60" height="5" fill="#000000" opacity="0.6" />
+      <rect x="80" y="153" width="110" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="80" y="163" width="100" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="80" y="173" width="85" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="80" y="193" width="60" height="5" fill="#000000" opacity="0.6" />
+      <rect x="80" y="208" width="110" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="80" y="218" width="95" height="4" fill="#5A5A57" opacity="0.3" />
 
       {/* AI sparkle in middle */}
-      <circle cx="240" cy="160" r="36" fill="#E07A3C" opacity="0.12" />
-      <circle cx="240" cy="160" r="24" fill="#E07A3C" opacity="0.2" />
-      <circle cx="240" cy="160" r="14" fill="#E07A3C" />
+      <circle cx="240" cy="160" r="36" fill="#000000" opacity="0.12" />
+      <circle cx="240" cy="160" r="24" fill="#000000" opacity="0.2" />
+      <circle cx="240" cy="160" r="14" fill="#000000" />
       {/* Lightning bolt */}
       <path d="M243 152l-5 10h4l-5 10 9-12h-5l6-8z" fill="white" />
 
       {/* Arrows */}
-      <path d="M218 160h-8" stroke="#E07A3C" strokeWidth="2" strokeLinecap="round" />
-      <path d="M208 156l-6 4 6 4" stroke="#E07A3C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M262 160h8" stroke="#E07A3C" strokeWidth="2" strokeLinecap="round" />
-      <path d="M272 156l6 4-6 4" stroke="#E07A3C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M218 160h-8" stroke="#000000" strokeWidth="2" strokeLinecap="square" />
+      <path d="M208 156l-6 4 6 4" stroke="#000000" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" />
+      <path d="M262 160h8" stroke="#000000" strokeWidth="2" strokeLinecap="square" />
+      <path d="M272 156l6 4-6 4" stroke="#000000" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" />
 
       {/* Tailored resume document */}
-      <rect x="270" y="60" width="150" height="200" rx="12" fill="white" stroke="#E8E3D9" strokeWidth="1.5" />
-      {/* Green accent stripe */}
-      <rect x="270" y="60" width="6" height="200" rx="3" fill="#E07A3C" opacity="0.8" />
-      <rect x="290" y="90" width="80" height="8" rx="4" fill="#1A1714" opacity="0.8" />
-      <rect x="290" y="108" width="110" height="5" rx="2.5" fill="#6B655C" opacity="0.4" />
-      <rect x="290" y="118" width="90" height="5" rx="2.5" fill="#6B655C" opacity="0.4" />
-      <rect x="290" y="138" width="60" height="5" rx="2.5" fill="#E07A3C" opacity="0.6" />
-      <rect x="290" y="153" width="110" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="290" y="163" width="80" height="4" rx="2" fill="#2D7A4F" opacity="0.5" />
-      <rect x="290" y="173" width="100" height="4" rx="2" fill="#2D7A4F" opacity="0.5" />
-      <rect x="290" y="183" width="65" height="4" rx="2" fill="#2D7A4F" opacity="0.5" />
-      <rect x="290" y="193" width="60" height="5" rx="2.5" fill="#E07A3C" opacity="0.6" />
-      <rect x="290" y="208" width="110" height="4" rx="2" fill="#6B655C" opacity="0.3" />
-      <rect x="290" y="218" width="95" height="4" rx="2" fill="#6B655C" opacity="0.3" />
+      <rect x="270" y="60" width="150" height="200" fill="white" stroke="#D9D7D0" strokeWidth="1.5" />
+      {/* Accent stripe */}
+      <rect x="270" y="60" width="6" height="200" fill="#000000" opacity="0.8" />
+      <rect x="290" y="90" width="80" height="8" fill="#000000" opacity="0.8" />
+      <rect x="290" y="108" width="110" height="5" fill="#5A5A57" opacity="0.4" />
+      <rect x="290" y="118" width="90" height="5" fill="#5A5A57" opacity="0.4" />
+      <rect x="290" y="138" width="60" height="5" fill="#000000" opacity="0.6" />
+      <rect x="290" y="153" width="110" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="290" y="163" width="80" height="4" fill="#378ADD" opacity="0.5" />
+      <rect x="290" y="173" width="100" height="4" fill="#378ADD" opacity="0.5" />
+      <rect x="290" y="183" width="65" height="4" fill="#378ADD" opacity="0.5" />
+      <rect x="290" y="193" width="60" height="5" fill="#000000" opacity="0.6" />
+      <rect x="290" y="208" width="110" height="4" fill="#5A5A57" opacity="0.3" />
+      <rect x="290" y="218" width="95" height="4" fill="#5A5A57" opacity="0.3" />
 
       {/* Score badge */}
-      <rect x="330" y="240" width="70" height="28" rx="14" fill="#E8F5EE" stroke="#2D7A4F" strokeWidth="1" />
-      <text x="365" y="259" textAnchor="middle" fill="#2D7A4F" fontSize="11" fontWeight="600">9/10 fit</text>
+      <rect x="330" y="240" width="70" height="28" fill="#FFFFFF" stroke="#378ADD" strokeWidth="1" />
+      <text x="365" y="259" textAnchor="middle" fill="#378ADD" fontSize="11" fontWeight="600">9/10 fit</text>
     </svg>
   );
 }
@@ -70,7 +70,7 @@ function WorkflowStep({ number, icon: Icon, title, description, color }: {
         <div className={`w-10 h-10 ${color} flex items-center justify-center shrink-0`}>
           <Icon size={18} />
         </div>
-        <div className="w-px flex-1 bg-warm-border mt-3" />
+        <div className="w-px flex-1 bg-rule-soft mt-3" />
       </div>
       <div className="pb-8">
         <p className="text-xs font-bold text-ink-muted mb-1">Step {number}</p>
@@ -86,37 +86,37 @@ const features = [
     icon: Wand2,
     title: "AI Resume Tailoring",
     description: "Paste a job URL or description — Claude rewrites your resume bullets to match the role, then generates a targeted cover letter. All in under a minute.",
-    color: "bg-blue/10 text-ink",
+    color: "bg-ink text-paper",
   },
   {
     icon: Briefcase,
     title: "Application Tracker",
     description: "Track every role from Saved to Offer in a clean table or drag-and-drop kanban board. Know exactly where you stand at a glance.",
-    color: "bg-blue/10 text-ink",
+    color: "bg-ink text-paper",
   },
   {
     icon: Search,
     title: "Search Brief",
     description: "See exactly what parameters the job search agent uses — target roles, core skills, location, seniority. Toggle signals on and off and watch the queries update live.",
-    color: "bg-yellow/10 text-ink",
+    color: "bg-ink text-paper",
   },
   {
     icon: Globe,
     title: "Multi-Profile",
     description: "Add multiple profiles for different people. Upload a PDF or DOCX resume — Claude extracts the structured data automatically. Each profile has its own search brief and application tracker.",
-    color: "bg-purple-50 text-purple-700",
+    color: "bg-ink text-paper",
   },
   {
     icon: Zap,
     title: "Powered by Claude",
     description: "Every AI operation — resume tailoring, cover letter generation, search brief extraction, humanised writing — runs on Claude Sonnet with full prompt caching for speed and cost efficiency.",
-    color: "bg-orange-50 text-orange-700",
+    color: "bg-ink text-paper",
   },
   {
     icon: Shield,
     title: "Local & Private",
     description: "Your resume data lives in JSON files on your machine. No cloud database, no accounts, no tracking. The FastAPI backend runs locally and your files never leave your computer.",
-    color: "bg-blue/10 text-ink",
+    color: "bg-ink text-paper",
   },
 ];
 
@@ -127,7 +127,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="grid grid-cols-2 gap-12 items-center pt-4">
         <div>
-          <div className="inline-flex items-center gap-2 bg-blue/10 text-ink text-xs font-bold px-3 py-1.5 mb-6">
+          <div className="inline-flex items-center gap-2 border-[1.5px] border-ink text-ink text-xs font-bold px-3 py-1.5 mb-6">
             <Zap size={12} />
             Powered by Claude AI
           </div>
@@ -148,7 +148,7 @@ export default function AboutPage() {
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-5 py-2.5 text-sm font-medium transition-colors"
+              className="flex items-center gap-2 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper px-5 py-2.5 text-sm font-medium transition-colors"
             >
               Go to Dashboard
               <ArrowRight size={14} />
@@ -156,7 +156,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="bg-surface border border-rule-soft p-6  aspect-[3/2]">
+        <div className="border-t-[1.5px] border-ink pt-5  aspect-[3/2]">
           <HeroIllustration />
         </div>
       </section>
@@ -175,25 +175,25 @@ export default function AboutPage() {
               icon={FileText}
               title="Create your profile"
               description="Upload your existing resume as a PDF or DOCX. Claude parses it into a structured JSON profile — name, summary, experience with all bullet points, skills, education, and certifications."
-              color="bg-blue/10 text-ink"
+              color="bg-ink text-paper"
             />
             <WorkflowStep
               number="02"
               icon={Wand2}
               title="Tailor to each role"
               description="Paste a LinkedIn URL or job description. Claude rewrites your summary and reorders your experience bullets to emphasise the most relevant work. A cover letter is generated in the same pass."
-              color="bg-blue/10 text-ink"
+              color="bg-ink text-paper"
             />
             <WorkflowStep
               number="03"
               icon={Briefcase}
               title="Track every application"
               description="Download the tailored PDF and add the role to your tracker. Move applications between Saved, Applied, Interview, Offer, and Rejected — in a table or drag-and-drop kanban board."
-              color="bg-yellow/10 text-ink"
+              color="bg-ink text-paper"
             />
           </div>
 
-          <div className="bg-surface border border-rule-soft p-8 flex flex-col justify-center">
+          <div className="border-t-[1.5px] border-ink pt-5 flex flex-col justify-center">
             <p className="text-xs font-bold text-ink-muted mb-6">What the AI sees</p>
             <div className="space-y-3">
               {[
@@ -231,7 +231,7 @@ export default function AboutPage() {
 
         <div className="grid grid-cols-3 gap-4">
           {features.map(({ icon: Icon, title, description, color }) => (
-            <div key={title} className="bg-surface border border-rule-soft p-6">
+            <div key={title} className="border-t-[1.5px] border-ink pt-5">
               <div className={`w-10 h-10 flex items-center justify-center mb-4 ${color}`}>
                 <Icon size={18} />
               </div>
@@ -243,7 +243,7 @@ export default function AboutPage() {
       </section>
 
       {/* Tech stack */}
-      <section className="bg-surface border border-rule-soft p-10">
+      <section className="border-t-[1.5px] border-ink pt-5">
         <div className="grid grid-cols-2 gap-10 items-center">
           <div>
             <p className="text-xs font-bold text-ink mb-2">Built on</p>
@@ -269,7 +269,7 @@ export default function AboutPage() {
               <div key={item.name} className="bg-paper p-4 border border-rule-soft">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-bold text-ink">{item.name}</p>
-                  <span className="text-xs text-ink-muted bg-surface border border-rule-soft px-1.5 py-0.5 ">
+                  <span className="text-xs text-ink-muted border border-ink px-1.5 py-0.5">
                     {item.badge}
                   </span>
                 </div>

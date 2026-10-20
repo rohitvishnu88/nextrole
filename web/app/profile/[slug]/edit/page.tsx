@@ -219,7 +219,7 @@ export default function ResumeEditPage() {
               <p className="text-xs font-medium text-ink-muted mb-1">{group}</p>
               <div className="flex flex-wrap gap-1.5">
                 {list.map(skill => (
-                  <span key={skill} className="flex items-center gap-1 bg-surface border border-rule-soft px-2 py-0.5 text-xs text-ink">
+                  <span key={skill} className="flex items-center gap-1 border-t-[1.5px] border-ink pt-5.5 text-xs text-ink">
                     {skill}
                     <button onClick={() => { setEditing({ section: "skills", action: "edit", group, skill }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
                       <Pencil size={11} />
@@ -351,7 +351,7 @@ export default function ResumeEditPage() {
         <h2 className="text-sm font-bold text-ink-muted mb-2">languages</h2>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {items.map((lang, i) => (
-            <span key={lang} className="flex items-center gap-1 bg-surface border border-rule-soft px-2 py-0.5 text-xs text-ink">
+            <span key={lang} className="flex items-center gap-1 border-t-[1.5px] border-ink pt-5.5 text-xs text-ink">
               {lang}
               <button onClick={() => { setEditing({ section: "languages", action: "edit", itemIndex: i }); setDrafted(null); setApplyError(""); }} className="text-ink-muted hover:text-ink">
                 <Pencil size={11} />
@@ -507,10 +507,10 @@ export default function ResumeEditPage() {
         </button>
       </div>
 
-      <h1 className="text-xl font-bold text-ink">edit resume</h1>
+      <h1 className="text-5xl font-bold text-ink leading-none">edit resume</h1>
 
       {applyError && (
-        <div className=" bg-red/10 border border-red p-3">
+        <div className="bg-red/10 border-l-[3px] border-red px-3 py-2">
           <p className="text-sm text-ink">{applyError}</p>
         </div>
       )}
