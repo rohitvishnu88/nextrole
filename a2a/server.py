@@ -18,6 +18,7 @@ from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -40,6 +41,7 @@ from .models import (
     make_error,
 )
 from .skills import tailor, job_search, linkedin
+from . import auth
 from .routes import profiles, applications, tailor_api, search_brief, job_search as job_search_routes, resume_versions, job_analysis as job_analysis_routes
 
 app = FastAPI(
@@ -58,6 +60,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_session_secret = _os.environ.get("SESSION_SECRET")
+if not _session_secret:
+    if _os.environ.get("TESTING") != "1":
+        raise RuntimeError("SESSION_SECRET must be set (a long random string) to sign session cookies")
+    _session_secret = "testing-only-secret"
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=_session_secret,
+    same_site="lax",
+    https_only=_os.environ.get("PUBLIC_BASE_URL", "").startswith("https://"),
+    max_age=30 * 24 * 3600,
+)
+
+app.include_router(auth.router)
 app.include_router(profiles.router)
 app.include_router(applications.router)
 app.include_router(tailor_api.router)

@@ -67,6 +67,18 @@ $env:ANTHROPIC_API_KEY = "your-key-here"
 $env:TAVILY_API_KEY = "your-key-here"
 ```
 
+### 2b. Sign-in settings
+
+The app is invite-only and uses Google sign-in. Set these before starting the backend:
+
+| Variable | What it is |
+|---|---|
+| `SESSION_SECRET` | A long random string used to sign session cookies, e.g. the output of `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From a Google Cloud OAuth client (Web application) |
+| `PUBLIC_BASE_URL` | Where the app is served, e.g. `http://localhost:3000`. Add `{PUBLIC_BASE_URL}/api/auth/callback` as an authorised redirect URI on the OAuth client |
+| `OWNER_EMAIL` | Your Google email; the owner sees spend and has no per-user limits |
+| `ALLOWED_EMAILS` | Comma-separated emails of invited friends |
+
 ### 3. Install dependencies
 
 **Mac / Linux**

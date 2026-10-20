@@ -42,6 +42,17 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                name TEXT,
+                picture TEXT,
+                is_owner INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                last_login_at TEXT NOT NULL
+            )
+        """)
         existing = {row["name"] for row in conn.execute("PRAGMA table_info(applications)")}
         for column, sql_type in _NEW_COLUMNS.items():
             if column not in existing:
@@ -115,6 +126,48 @@ def list_applications(profile_id: str, today: Optional[date] = None) -> list:
             (profile_id,),
         ).fetchall()
     return [dict(r, overdue=is_overdue(dict(r), today)) for r in rows]
+
+
+def upsert_user(email: str, name: str, picture: str, is_owner: bool) -> dict:
+    init_db()
+    email = email.strip().lower()
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        if row:
+            conn.execute(
+                "UPDATE users SET name = ?, picture = ?, is_owner = ?, last_login_at = ? WHERE id = ?",
+                (name, picture, int(is_owner), now, row["id"]),
+            )
+            user_id = row["id"]
+        else:
+            user_id = str(uuid.uuid4())
+            conn.execute(
+                "INSERT INTO users (id, email, name, picture, is_owner, created_at, last_login_at) VALUES (?,?,?,?,?,?,?)",
+                (user_id, email, name, picture, int(is_owner), now, now),
+            )
+        conn.commit()
+    return get_user(user_id)
+
+
+def get_user(user_id: str) -> Optional[dict]:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def get_user_by_email(email: str) -> Optional[dict]:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+    return dict(row) if row else None
+
+
+def list_users() -> list:
+    init_db()
+    with _connect() as conn:
+        return [dict(r) for r in conn.execute("SELECT * FROM users ORDER BY created_at").fetchall()]
 
 
 def get_application(app_id: str) -> Optional[dict]:
