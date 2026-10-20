@@ -12,14 +12,7 @@ import * as api from "@/lib/api";
 
 const COLUMNS: ApplicationStatus[] = ["saved", "applied", "interview", "offer", "rejected"];
 const COL_LABELS: Record<ApplicationStatus, string> = {
-  saved: "Saved", applied: "Applied", interview: "Interview", offer: "Offer", rejected: "Rejected",
-};
-const COL_COLOURS: Record<ApplicationStatus, string> = {
-  saved:     "bg-paper border-rule-soft",
-  applied:   "bg-blue/10 border-accent/20",
-  interview: "bg-yellow/10 border-yellow",
-  offer:     "bg-blue/10 border-blue",
-  rejected:  "bg-red/10 border-red",
+  saved: "saved", applied: "applied", interview: "interview", offer: "offer", rejected: "rejected",
 };
 
 function KanbanCard({ app, isDragging }: { app: Application; isDragging?: boolean }) {
@@ -31,7 +24,7 @@ function KanbanCard({ app, isDragging }: { app: Application; isDragging?: boolea
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-surface px-3.5 py-3 border border-rule-soft  cursor-grab active:cursor-grabbing"
+      className="bg-surface px-3.5 py-3 border-[1.5px] border-ink cursor-grab active:cursor-grabbing"
     >
       <p className="text-sm font-bold text-ink truncate">{app.company}</p>
       <p className="text-xs text-ink-muted truncate mt-0.5">{app.job_title}</p>
@@ -71,12 +64,12 @@ export function ApplicationKanban({ apps, onRefresh }: Props) {
           const colApps = byStatus(col);
           return (
             <div key={col} className="flex-shrink-0 w-52">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-xs font-bold text-ink-muted">{COL_LABELS[col]}</span>
-                <span className="text-xs text-ink-muted bg-paper border border-rule-soft px-2 py-0.5">{colApps.length}</span>
+              <div className="flex items-center justify-between mb-2 pb-1 border-b-[1.5px] border-ink">
+                <span className="text-sm font-bold text-ink">{COL_LABELS[col]}</span>
+                <span className="text-xs text-ink-muted">{colApps.length}</span>
               </div>
               <SortableContext id={col} items={colApps.map(a => a.id)} strategy={verticalListSortingStrategy}>
-                <div className={`min-h-24 border p-2 space-y-2 ${COL_COLOURS[col]}`} id={col}>
+                <div className={`min-h-24 border p-2 space-y-2 border-rule-soft`} id={col}>
                   {colApps.map(app => (
                     <KanbanCard key={app.id} app={app} isDragging={activeApp?.id === app.id} />
                   ))}
@@ -88,7 +81,7 @@ export function ApplicationKanban({ apps, onRefresh }: Props) {
       </div>
       <DragOverlay>
         {activeApp && (
-          <div className="bg-surface px-3.5 py-3 border border-accent/30  w-52">
+          <div className="bg-surface px-3.5 py-3 border-[1.5px] border-ink w-52">
             <p className="text-sm font-bold text-ink">{activeApp.company}</p>
             <p className="text-xs text-ink-muted mt-0.5">{activeApp.job_title}</p>
           </div>

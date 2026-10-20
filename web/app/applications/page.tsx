@@ -25,20 +25,20 @@ export default function ApplicationsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">applications</h1>
-          <p className="text-sm text-ink-muted mt-1">{apps.length} role{apps.length !== 1 ? "s" : ""} tracked</p>
+          <h1 className="text-5xl font-bold text-ink leading-none">applications</h1>
+          <p className="text-sm text-ink-muted mt-3">{apps.length} role{apps.length !== 1 ? "s" : ""} tracked</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-surface border border-rule-soft p-1 gap-0.5">
+          <div className="flex border-t-[1.5px] border-ink pt-5 gap-0.5">
             <button
               onClick={() => setView("table")}
-              className={`p-1.5 transition-colors ${view === "table" ? "bg-paper text-ink" : "text-ink-muted hover:text-ink"}`}
+              className={`p-1.5 transition-colors ${view === "table" ? "bg-ink text-paper" : "text-ink hover:bg-paper"}`}
             >
               <List size={15} />
             </button>
             <button
               onClick={() => setView("kanban")}
-              className={`p-1.5 transition-colors ${view === "kanban" ? "bg-paper text-ink" : "text-ink-muted hover:text-ink"}`}
+              className={`p-1.5 transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-ink hover:bg-paper"}`}
             >
               <LayoutGrid size={15} />
             </button>
@@ -54,7 +54,7 @@ export default function ApplicationsPage() {
       </div>
 
       {!profile && (
-        <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
+        <div className="bg-yellow/10 border-l-[3px] border-yellow px-4 py-3 text-sm text-ink">
           Select a profile first.
         </div>
       )}

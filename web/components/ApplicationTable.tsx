@@ -30,7 +30,7 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
   const Th = ({ label, k }: { label: string; k: SortKey }) => (
     <th
       onClick={() => toggleSort(k)}
-      className="px-5 py-3 text-left text-xs font-bold text-ink-muted cursor-pointer hover:text-ink select-none"
+      className="pr-4 py-3 text-left text-xs font-bold text-ink-muted cursor-pointer hover:text-ink select-none"
     >
       {label} {sortKey === k ? (sortAsc ? "↑" : "↓") : ""}
     </th>
@@ -42,27 +42,27 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
   }
 
   return (
-    <div className="bg-surface border border-rule-soft overflow-hidden">
+    <div className="border-t-[1.5px] border-ink">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-rule-soft bg-paper">
+          <tr className="border-b-[1.5px] border-ink">
             <Th label="Company" k="company" />
             <Th label="Role" k="job_title" />
-            <th className="px-5 py-3 text-left text-xs font-bold text-ink-muted">Location</th>
+            <th className="pr-4 py-3 text-left text-xs font-bold text-ink-muted">Location</th>
             <Th label="Status" k="status" />
             <Th label="Applied" k="applied_date" />
-            <th className="px-5 py-3" />
+            <th className="py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-rule-soft">
           {sorted.map(app => (
             <tr key={app.id} className="hover:bg-paper transition-colors">
-              <td className="px-5 py-3.5 font-medium text-ink">{app.company}</td>
-              <td className="px-5 py-3.5 text-ink">{app.job_title}</td>
-              <td className="px-5 py-3.5 text-ink-muted">{app.location ?? "—"}</td>
-              <td className="px-5 py-3.5"><StatusMarker status={app.status} /></td>
-              <td className="px-5 py-3.5 text-ink-muted">{app.applied_date ?? "—"}</td>
-              <td className="px-5 py-3.5 text-right">
+              <td className="pr-4 py-3.5 font-medium text-ink">{app.company}</td>
+              <td className="pr-4 py-3.5 text-ink">{app.job_title}</td>
+              <td className="pr-4 py-3.5 text-ink-muted">{app.location ?? "—"}</td>
+              <td className="pr-4 py-3.5"><StatusMarker status={app.status} /></td>
+              <td className="pr-4 py-3.5 text-ink-muted">{app.applied_date ?? "—"}</td>
+              <td className="pr-4 py-3.5 text-right">
                 <button onClick={() => handleDelete(app.id)} className="text-rule-soft hover:text-ink transition-colors">
                   <Trash2 size={14} />
                 </button>
@@ -71,7 +71,7 @@ export function ApplicationTable({ apps, onRefresh }: Props) {
           ))}
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-5 py-12 text-center text-ink-muted text-sm">No applications yet</td>
+              <td colSpan={6} className="py-12 text-center text-ink-muted text-sm">No applications yet</td>
             </tr>
           )}
         </tbody>

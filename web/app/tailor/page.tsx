@@ -71,17 +71,17 @@ function TailorPageInner() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink">tailor a resume</h1>
-        <p className="text-sm text-ink-muted mt-1">Paste a job URL or description — get a tailored PDF and cover letter</p>
+        <h1 className="text-5xl font-bold text-ink leading-none">tailor a resume</h1>
+        <p className="text-sm text-ink-muted mt-3">Paste a job URL or description — get a tailored PDF and cover letter</p>
       </div>
 
       {!profile && (
-        <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
+        <div className="bg-yellow/10 border-l-[3px] border-yellow px-4 py-3 text-sm text-ink">
           Select or create a profile first from the top-right.
         </div>
       )}
 
-      <div className="bg-surface border border-rule-soft p-6 space-y-4">
+      <div className="border-t-[1.5px] border-ink pt-5 space-y-4">
         <div className="flex gap-2">
           {(["url", "jd"] as const).map(m => (
             <button
@@ -90,10 +90,10 @@ function TailorPageInner() {
               className={`px-4 py-1.5 text-sm font-medium transition-colors ${
                 mode === m
                   ? "bg-ink text-paper"
-                  : "bg-paper text-ink-muted hover:text-ink"
+                  : "border-[1.5px] border-ink text-ink hover:bg-surface"
               }`}
             >
-              {m === "url" ? "Job URL" : "Paste JD"}
+              {m === "url" ? "job url" : "paste jd"}
             </button>
           ))}
         </div>
@@ -103,7 +103,7 @@ function TailorPageInner() {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="https://linkedin.com/jobs/view/..."
-            className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition"
+            className="w-full border-[1.5px] border-ink px-4 py-2.5 text-sm text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition"
           />
         ) : (
           <textarea
@@ -111,7 +111,7 @@ function TailorPageInner() {
             onChange={e => setInput(e.target.value)}
             placeholder="Paste the full job description here..."
             rows={8}
-            className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink placeholder-muted bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-none"
+            className="w-full border-[1.5px] border-ink px-4 py-2.5 text-sm text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-none"
           />
         )}
 
@@ -128,7 +128,7 @@ function TailorPageInner() {
       </div>
 
       {job && (
-        <div className="bg-surface border border-rule-soft p-6 space-y-4">
+        <div className="border-t-[1.5px] border-ink pt-5 space-y-4">
           <div className="flex items-center gap-2.5">
             <span className={`w-2.5 h-2.5 shrink-0 ${
               job.status === "running" ? "bg-yellow animate-pulse" :
@@ -145,14 +145,14 @@ function TailorPageInner() {
               </div>
               <div className="space-y-3">
                 {tailoredResume.experience.map((exp, i) => (
-                  <div key={i} className="bg-paper p-4">
+                  <div key={i} className="border-l-[3px] border-ink pl-4">
                     <p className="text-sm font-bold text-ink">{exp.title}</p>
                     <p className="text-xs text-ink-muted mb-2">
                       {exp.company}{exp.highlight ? ` — ${exp.highlight}` : ""} · {exp.start_date} – {exp.end_date}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
                       {exp.description.map((bullet, j) => (
-                        <li key={j} className="text-xs text-navy/80">{bullet}</li>
+                        <li key={j} className="text-xs text-ink">{bullet}</li>
                       ))}
                     </ul>
                   </div>
@@ -166,7 +166,7 @@ function TailorPageInner() {
               <a
                 href={`/api/tailor/${job.job_id}/pdf`}
                 download
-                className="flex items-center gap-2 bg-ink hover:bg-navy/90 text-paper px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-ink hover:bg-ink/80 text-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Download size={14} />
                 download pdf
@@ -174,21 +174,21 @@ function TailorPageInner() {
               <a
                 href={`/api/tailor/${job.job_id}/cover-letter`}
                 download
-                className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Download size={14} />
                 cover letter
               </a>
               <a
                 href={`/tailor/${job.job_id}/edit`}
-                className="flex items-center gap-2 border border-rule-soft text-ink hover:bg-paper px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Pencil size={14} />
                 edit resume
               </a>
               <button
                 onClick={() => setShowAddToTracker(true)}
-                className="flex items-center gap-2 border border-ink text-ink hover:bg-blue/10 px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper px-4 py-2 text-sm font-medium transition-colors"
               >
                 <Plus size={14} />
                 add to tracker

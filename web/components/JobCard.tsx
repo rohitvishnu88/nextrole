@@ -12,12 +12,6 @@ const SOURCE_LABEL: Record<JobMatch["source"], string> = {
   yc: "Y Combinator",
 };
 
-const SOURCE_COLOUR: Record<JobMatch["source"], string> = {
-  linkedin: "bg-blue/10 text-ink",
-  greenhouse: "bg-blue/10 text-ink",
-  lever: "bg-yellow/10 text-ink",
-  yc: "bg-paper text-ink border border-rule-soft",
-};
 
 export function JobCard({
   job,
@@ -72,18 +66,18 @@ export function JobCard({
   }
 
   return (
-    <div className="bg-surface border border-rule-soft p-5 flex flex-col gap-3">
+    <div className="border-t-[1.5px] border-ink pt-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-ink">{job.title}</h3>
             {job.status === "new" && (
-              <span className="text-xs font-medium px-2 py-0.5 bg-ink text-paper">New</span>
+              <span className="text-xs font-medium px-2 py-0.5 bg-ink text-paper">new</span>
             )}
           </div>
           <p className="text-sm text-ink-muted">{job.company} · {job.location}</p>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-0.5 shrink-0 ${SOURCE_COLOUR[job.source]}`}>
+        <span className={`text-xs font-medium px-2.5 py-0.5 shrink-0 border border-ink text-ink`}>
           {SOURCE_LABEL[job.source]}
         </span>
       </div>

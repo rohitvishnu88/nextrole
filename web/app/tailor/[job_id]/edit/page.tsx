@@ -92,8 +92,8 @@ export default function EditTailorPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">edit tailored resume</h1>
-          <p className="text-sm text-ink-muted mt-1">
+          <h1 className="text-5xl font-bold text-ink leading-none">edit tailored resume</h1>
+          <p className="text-sm text-ink-muted mt-3">
             Changes only affect this tailored version — your base profile is unchanged
           </p>
         </div>
@@ -106,19 +106,19 @@ export default function EditTailorPage() {
       </div>
 
       {/* Summary */}
-      <div className="bg-surface border border-rule-soft p-5 space-y-2">
+      <div className="border-t-[1.5px] border-ink pt-5 space-y-2">
         <p className="text-xs font-bold text-ink-muted">Summary</p>
         <textarea
           value={resume?.summary ?? ""}
           onChange={e => updateSummary(e.target.value)}
           rows={4}
-          className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
+          className="w-full border-[1.5px] border-ink px-4 py-2.5 text-sm text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
         />
       </div>
 
       {/* Experience */}
       {resume?.experience.map((exp, expIdx) => (
-        <div key={expIdx} className="bg-surface border border-rule-soft overflow-hidden">
+        <div key={expIdx} className="border-t-[1.5px] border-ink">
           <button
             onClick={() => toggleExpand(expIdx)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-paper transition-colors text-left"
@@ -147,7 +147,7 @@ export default function EditTailorPage() {
                     value={bullet}
                     onChange={e => updateBullet(expIdx, bulletIdx, e.target.value)}
                     rows={2}
-                    className="flex-1 border-[1.5px] border-ink px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
+                    className="flex-1 border-[1.5px] border-ink px-3 py-2 text-sm text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
                   />
                 </div>
               ))}
@@ -157,13 +157,13 @@ export default function EditTailorPage() {
       ))}
 
       {/* Cover Letter */}
-      <div className="bg-surface border border-rule-soft p-5 space-y-2">
+      <div className="border-t-[1.5px] border-ink pt-5 space-y-2">
         <p className="text-xs font-bold text-ink-muted">Cover Letter</p>
         <textarea
           value={coverLetter}
           onChange={e => setCoverLetter(e.target.value)}
           rows={10}
-          className="w-full border border-rule-soft px-4 py-2.5 text-sm text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
+          className="w-full border-[1.5px] border-ink px-4 py-2.5 text-sm text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink transition resize-y"
         />
       </div>
 
@@ -179,7 +179,7 @@ export default function EditTailorPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-ink hover:bg-navy/90 disabled:opacity-50 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
+          className="flex items-center gap-2 bg-ink hover:bg-ink/80 disabled:opacity-50 text-paper px-5 py-2.5 text-sm font-bold transition-colors"
         >
           <Save size={15} />
           {saving ? "Saving…" : "Save & Regenerate PDF"}

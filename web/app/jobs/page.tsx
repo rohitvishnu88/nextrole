@@ -75,8 +75,8 @@ export default function JobsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">jobs</h1>
-          <p className="text-sm text-ink-muted mt-1">{jobs.length} match{jobs.length !== 1 ? "es" : ""}</p>
+          <h1 className="text-5xl font-bold text-ink leading-none">jobs</h1>
+          <p className="text-sm text-ink-muted mt-3">{jobs.length} match{jobs.length !== 1 ? "es" : ""}</p>
         </div>
         <button
           onClick={handleSearch}
@@ -89,13 +89,13 @@ export default function JobsPage() {
       </div>
 
       {!profile && (
-        <div className="bg-yellow/10 border border-yellow px-5 py-4 text-sm text-ink">
+        <div className="bg-yellow/10 border-l-[3px] border-yellow px-4 py-3 text-sm text-ink">
           Select a profile first.
         </div>
       )}
 
       {error && (
-        <div className="bg-red/10 border border-red px-5 py-4 text-sm text-ink">
+        <div className="bg-red/10 border-l-[3px] border-red px-4 py-3 text-sm text-ink">
           {error}
         </div>
       )}
@@ -108,7 +108,7 @@ export default function JobsPage() {
       )}
 
       {profile && !loading && !searching && jobs.length === 0 && (
-        <div className="bg-paper border border-rule-soft px-5 py-8 text-center text-sm text-ink-muted">
+        <div className="border-t border-rule-soft py-8 text-sm text-ink-muted">
           No matches yet — click Search now.
         </div>
       )}
