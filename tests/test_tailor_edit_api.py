@@ -3,6 +3,7 @@ import sys
 import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
 
 import pytest
 from fastapi import FastAPI
@@ -108,3 +109,46 @@ def test_patch_data_404_for_unknown_job(client):
     c, _ = client
     resp = c.patch("/api/tailor/no-such-id/data", json={"resume": {}, "cover_letter": None})
     assert resp.status_code == 404
+
+
+def _add_fit_files(mod, tmp_path, analysis_id=None):
+    base = {"name": "Test User", "summary": "A summary.", "experience": [
+        {"title": "Architect", "company": "Acme", "description": ["Cut costs"]}]}
+    (tmp_path / "base.json").write_text(json.dumps(base))
+    fit = {"analysis_id": analysis_id, "changes": [{"location": "summary", "after": "A summary."}],
+           "fabrication_flags": [], "ats": {"terms": []}, "ats_terms": []}
+    (tmp_path / "fit.json").write_text(json.dumps(fit))
+    mod._jobs["test-job-id"].update({"fit_file": str(tmp_path / "fit.json"),
+                                     "base_file": str(tmp_path / "base.json"), "analysis_id": analysis_id})
+    return base, fit
+
+
+def test_fit_endpoint_returns_sidecar(client, tmp_path):
+    c, mod = client
+    _, fit = _add_fit_files(mod, tmp_path)
+    resp = c.get("/api/tailor/test-job-id/fit")
+    assert resp.status_code == 200
+    assert resp.json() == {"analysis": None, "changes": fit["changes"],
+                           "fabrication_flags": [], "ats": {"terms": []}}
+    assert c.get("/api/tailor/unknown/fit").status_code == 404
+
+
+def test_patch_data_rechecks_fit(client, tmp_path, monkeypatch):
+    c, mod = client
+    base, _ = _add_fit_files(mod, tmp_path)
+    import tailor_agent
+    monkeypatch.setattr(mod, "render_resume", lambda data, html, pdf: None)
+    monkeypatch.setattr(tailor_agent, "extract_pdf_text", lambda p: "")
+    edited = json.loads(json.dumps(base))
+    edited["experience"][0]["description"][0] = "Cut costs by 30%"
+    resp = c.patch("/api/tailor/test-job-id/data", json={"resume": edited})
+    assert resp.status_code == 200
+    flags = resp.json()["fit"]["fabrication_flags"]
+    assert {"location": "experience[0].description[0]", "kind": "number", "text": "30%"} in flags
+
+
+def test_patch_without_fit_files_returns_null_fit(client, monkeypatch):
+    c, mod = client
+    monkeypatch.setattr(mod, "render_resume", lambda data, html, pdf: None)
+    resp = c.patch("/api/tailor/test-job-id/data", json={"resume": {"name": "Test User"}})
+    assert resp.json() == {"ok": True, "fit": None}

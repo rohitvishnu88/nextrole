@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "agents"))
 
 import pytest
 from fastapi import FastAPI
@@ -132,3 +133,27 @@ def test_download_history_rejects_invalid_entry_id(client):
     _write_run(root, "rohit", "rohit_acme_20260101_1200")
     resp = c.get("/api/tailor/history/rohit/%2E%2E/pdf")
     assert resp.status_code == 400
+
+
+def test_history_includes_score_and_verdict(client, monkeypatch):
+    c, root = client
+    import job_analysis
+    monkeypatch.setattr(job_analysis, "ROOT", root)
+    _write_run(root, "rohit", "run_a", job_url="https://example.com/job", created_at="2026-01-01T00:00:00+00:00")
+    meta_path = root / "output" / "profiles" / "rohit" / "resumes" / "meta_run_a.json"
+    meta = json.loads(meta_path.read_text())
+    meta["analysis_id"] = "0123456789abcdef"
+    meta_path.write_text(json.dumps(meta))
+    job_analysis.save_analysis("rohit", {"analysis_id": "0123456789abcdef", "match_score": 81, "verdict": "strong fit"})
+
+    entry = c.get("/api/tailor/history/rohit").json()[0]
+    assert entry["match_score"] == 81
+    assert entry["verdict"] == "strong fit"
+
+
+def test_history_score_null_without_analysis(client):
+    c, root = client
+    _write_run(root, "rohit", "run_b", job_url="https://example.com/job")
+    entry = c.get("/api/tailor/history/rohit").json()[0]
+    assert entry["match_score"] is None
+    assert entry["verdict"] is None

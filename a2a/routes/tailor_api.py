@@ -16,6 +16,9 @@ from a2a import resume_history
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
 from resume_builder import render_resume
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
+import job_analysis
+
 ROOT = Path(__file__).parent.parent.parent
 
 router = APIRouter(prefix="/api/tailor", tags=["tailor"])
@@ -80,6 +83,9 @@ async def start_tailor(body: TailorRequest):
                     "pdf_file": result["pdf_file"],
                     "cover_letter_file": result["cover_letter_file"],
                     "json_file": result["json_file"],
+                    "fit_file": result.get("fit_file"),
+                    "base_file": result.get("base_file"),
+                    "analysis_id": result.get("analysis_id"),
                     "url": body.url or "",
                 })
             else:
@@ -89,6 +95,20 @@ async def start_tailor(body: TailorRequest):
 
     asyncio.create_task(_run())
     return {"job_id": job_id}
+
+
+def _load_analysis_or_none(profile_slug: str, analysis_id: Optional[str]) -> Optional[dict]:
+    if not analysis_id or not job_analysis.ANALYSIS_ID_RE.match(analysis_id):
+        return None
+    return job_analysis.load_analysis(profile_slug, analysis_id)
+
+
+def _recheck_fit(job: dict) -> Optional[dict]:
+    fit_file, base_file = job.get("fit_file"), job.get("base_file")
+    if not fit_file or not base_file or not Path(fit_file).exists() or not Path(base_file).exists():
+        return None
+    import tailor_agent
+    return tailor_agent.recheck_fit(job["json_file"], job["pdf_file"], base_file, fit_file)
 
 
 @router.get("/history/{profile_slug}")
@@ -113,10 +133,12 @@ def list_tailor_history(profile_slug: str):
 
         job_url = ""
         created_at = datetime.fromtimestamp(json_path.stat().st_mtime, tz=timezone.utc).isoformat()
+        analysis = None
         if meta_path.exists():
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             job_url = meta.get("job_url") or ""
             created_at = meta.get("created_at") or created_at
+            analysis = _load_analysis_or_none(profile_slug, meta.get("analysis_id"))
 
         entries.append({
             "id": entry_id,
@@ -124,6 +146,8 @@ def list_tailor_history(profile_slug: str):
             "job_url": job_url,
             "pdf_available": pdf_path.exists(),
             "cover_letter_available": cover_letter_path.exists(),
+            "match_score": analysis.get("match_score") if analysis else None,
+            "verdict": analysis.get("verdict") if analysis else None,
         })
 
     entries.sort(key=lambda e: e["created_at"], reverse=True)
@@ -207,7 +231,24 @@ def update_tailor_data(job_id: str, body: UpdateRequest):
     if body.cover_letter is not None:
         Path(job["cover_letter_file"]).write_text(body.cover_letter, encoding="utf-8")
 
-    return {"ok": True}
+    return {"ok": True, "fit": _recheck_fit(job)}
+
+
+@router.get("/{job_id}/fit")
+def get_tailor_fit(job_id: str):
+    job = _jobs.get(job_id)
+    if not job or job["status"] != "completed":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    fit_file = job.get("fit_file")
+    if not fit_file or not Path(fit_file).exists():
+        raise HTTPException(status_code=404, detail="No fit results for this run")
+    fit = json.loads(Path(fit_file).read_text(encoding="utf-8"))
+    return {
+        "analysis": _load_analysis_or_none(job.get("profile_slug", ""), fit.get("analysis_id")),
+        "changes": fit.get("changes", []),
+        "fabrication_flags": fit.get("fabrication_flags", []),
+        "ats": fit.get("ats", {}),
+    }
 
 
 @router.get("/{job_id}/pdf")
