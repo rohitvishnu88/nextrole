@@ -18,13 +18,18 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
   const [error, setError] = useState("");
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  // The server may adjust the slug (e.g. "rohit-2" if "rohit" is taken), so the
+  // profile is created before parsing and its returned slug is used from then on.
+  const [createdSlug, setCreatedSlug] = useState<string | null>(null);
 
   async function handleParse() {
     if (!name || !file) return;
     setLoading(true);
     setError("");
     try {
-      const result = await api.parseResume(slug, file);
+      const target = createdSlug ?? (await api.createProfile(name, slug)).slug;
+      setCreatedSlug(target);
+      const result = await api.parseResume(target, file);
       setParsed(result);
       setStep("preview");
     } catch (e: unknown) {
@@ -34,14 +39,20 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
     }
   }
 
+  async function handleClose() {
+    // Backing out before confirming leaves no empty profile behind.
+    if (createdSlug && step !== "done") await api.deleteProfile(createdSlug).catch(() => {});
+    onClose();
+  }
+
   async function handleConfirm() {
+    if (!createdSlug) return;
     setLoading(true);
     setError("");
     try {
-      await api.createProfile(name, slug);
-      await api.confirmResume(slug);
+      await api.confirmResume(createdSlug);
       setStep("done");
-      onCreated(slug);
+      onCreated(createdSlug);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save profile");
     } finally {
@@ -52,7 +63,7 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
   return createPortal(
     <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-[9999]">
       <div className="bg-surface border-[1.5px] border-ink w-full max-w-xl mx-4 p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-ink-muted hover:text-ink-muted">
+        <button onClick={handleClose} className="absolute top-4 right-4 text-ink-muted hover:text-ink-muted">
           <X size={18} />
         </button>
 
@@ -197,7 +208,7 @@ export function AddProfileModal({ onClose, onCreated }: Props) {
           <div className="flex flex-col items-center py-6 gap-3">
             <Check size={40} className="text-blue" />
             <p className="text-sm text-ink-muted">Profile created successfully.</p>
-            <button onClick={onClose} className="bg-ink text-paper px-6 py-2 text-sm font-medium hover:bg-ink/80">
+            <button onClick={handleClose} className="bg-ink text-paper px-6 py-2 text-sm font-medium hover:bg-ink/80">
               done
             </button>
           </div>

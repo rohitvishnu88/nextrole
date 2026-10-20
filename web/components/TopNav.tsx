@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ProfileSwitcher } from "./ProfileSwitcher";
+import { AccountMenu } from "./AccountMenu";
 
 const nav = [
   { href: "/",             label: "dashboard" },
@@ -38,8 +39,9 @@ export function TopNav() {
           })}
         </nav>
 
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
           <ProfileSwitcher />
+          <AccountMenu />
         </div>
       </div>
     </header>

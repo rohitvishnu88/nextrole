@@ -1,3 +1,10 @@
+export interface Me {
+  email: string;
+  name: string;
+  picture: string;
+  is_owner: boolean;
+}
+
 export interface Profile {
   id: string;
   name: string;

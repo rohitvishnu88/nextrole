@@ -1,6 +1,18 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry, TailorFit, JobAnalysisStatus } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry, TailorFit, JobAnalysisStatus, Me } from "./types";
 
 const BASE = "/api";
+
+export class ApiError extends Error {
+  constructor(public status: number, public detail: unknown, message: string) {
+    super(message);
+  }
+}
+
+function errorMessage(detail: unknown, fallback: string): string {
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "message" in detail) return String((detail as { message: unknown }).message);
+  return fallback;
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -8,11 +20,17 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+    const text = await res.text();
+    let detail: unknown = text;
+    try { detail = JSON.parse(text).detail ?? text; } catch { /* plain-text error body */ }
+    throw new ApiError(res.status, detail, errorMessage(detail, `${res.status} ${res.statusText}`));
   }
   return res.json();
 }
+
+// Auth
+export const getMe = () => req<Me>("/auth/me");
+export const logout = () => req<{ ok: boolean }>("/auth/logout", { method: "POST" });
 
 // Profiles
 export const listProfiles = () => req<Profile[]>("/profiles");
@@ -31,7 +49,11 @@ export async function parseResume(slug: string, file: File): Promise<Record<stri
     method: "POST",
     body: form,
   });
-  if (!res.ok) throw new Error(`Parse failed: ${res.statusText}`);
+  if (!res.ok) {
+    let detail: unknown = res.statusText;
+    try { detail = (await res.json()).detail ?? detail; } catch { /* non-JSON error */ }
+    throw new ApiError(res.status, detail, errorMessage(detail, `Parse failed: ${res.statusText}`));
+  }
   return res.json();
 }
 

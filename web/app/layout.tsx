@@ -3,6 +3,7 @@ import { Jost } from "next/font/google";
 import "./globals.css";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
+import { AuthGate } from "@/components/AuthGate";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -19,10 +20,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={jost.variable}>
-      <body className="min-h-screen bg-paper text-ink flex flex-col">
-        <TopNav />
-        <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">{children}</main>
-        <Footer />
+      <body className="min-h-screen bg-paper text-ink">
+        <AuthGate>
+          <div className="min-h-screen flex flex-col">
+            <TopNav />
+            <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">{children}</main>
+            <Footer />
+          </div>
+        </AuthGate>
       </body>
     </html>
   );
