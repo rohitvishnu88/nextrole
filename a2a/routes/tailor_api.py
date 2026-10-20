@@ -1,7 +1,9 @@
 import asyncio
 import json
+import re
 import sys
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -9,12 +11,32 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from a2a import resume_history
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
 from resume_builder import render_resume
+
+ROOT = Path(__file__).parent.parent.parent
 
 router = APIRouter(prefix="/api/tailor", tags=["tailor"])
 
 _jobs = {}
+
+# Tailor output filenames are built from agents/tailor_agent.py::slugify(),
+# which only ever produces lowercase letters, digits, and underscores.
+_ENTRY_ID_RE = re.compile(r"^[a-z0-9_]+$")
+
+
+def _require_valid_profile_slug(slug: str) -> None:
+    try:
+        resume_history.validate_slug(slug)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid profile slug")
+
+
+def _require_valid_entry_id(entry_id: str) -> None:
+    if not _ENTRY_ID_RE.match(entry_id):
+        raise HTTPException(status_code=400, detail="Invalid history entry id")
 
 
 class TailorRequest(BaseModel):
@@ -67,6 +89,65 @@ async def start_tailor(body: TailorRequest):
 
     asyncio.create_task(_run())
     return {"job_id": job_id}
+
+
+@router.get("/history/{profile_slug}")
+def list_tailor_history(profile_slug: str):
+    """List every past tailoring run for a profile by scanning the output
+    directory directly - the in-memory `_jobs` dict above only holds jobs
+    from the current server process and is lost on restart, but the actual
+    PDF/JSON/cover-letter files persist on disk indefinitely."""
+    _require_valid_profile_slug(profile_slug)
+
+    resumes_dir = ROOT / "output" / "profiles" / profile_slug / "resumes"
+    cover_letters_dir = ROOT / "output" / "profiles" / profile_slug / "cover_letters"
+    if not resumes_dir.exists():
+        return []
+
+    entries = []
+    for json_path in resumes_dir.glob("resume_data_*.json"):
+        entry_id = json_path.stem[len("resume_data_"):]
+        pdf_path = resumes_dir / f"resume_{entry_id}.pdf"
+        meta_path = resumes_dir / f"meta_{entry_id}.json"
+        cover_letter_path = cover_letters_dir / f"cover_letter_{entry_id}.txt"
+
+        job_url = ""
+        created_at = datetime.fromtimestamp(json_path.stat().st_mtime, tz=timezone.utc).isoformat()
+        if meta_path.exists():
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            job_url = meta.get("job_url") or ""
+            created_at = meta.get("created_at") or created_at
+
+        entries.append({
+            "id": entry_id,
+            "created_at": created_at,
+            "job_url": job_url,
+            "pdf_available": pdf_path.exists(),
+            "cover_letter_available": cover_letter_path.exists(),
+        })
+
+    entries.sort(key=lambda e: e["created_at"], reverse=True)
+    return entries
+
+
+@router.get("/history/{profile_slug}/{entry_id}/pdf")
+def download_history_pdf(profile_slug: str, entry_id: str):
+    _require_valid_profile_slug(profile_slug)
+    _require_valid_entry_id(entry_id)
+    path = ROOT / "output" / "profiles" / profile_slug / "resumes" / f"resume_{entry_id}.pdf"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+    return FileResponse(path, media_type="application/pdf", filename=path.name)
+
+
+@router.get("/history/{profile_slug}/{entry_id}/cover-letter")
+def download_history_cover_letter(profile_slug: str, entry_id: str):
+    _require_valid_profile_slug(profile_slug)
+    _require_valid_entry_id(entry_id)
+    path = ROOT / "output" / "profiles" / profile_slug / "cover_letters" / f"cover_letter_{entry_id}.txt"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Cover letter file not found on disk")
+    return FileResponse(path, media_type="text/plain", filename=path.name)
 
 
 @router.get("/{job_id}")

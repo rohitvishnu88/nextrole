@@ -108,6 +108,14 @@ export interface JobSearchResult {
   error?: string | null;
 }
 
+export interface TailorHistoryEntry {
+  id: string;
+  created_at: string;
+  job_url: string;
+  pdf_available: boolean;
+  cover_letter_available: boolean;
+}
+
 export interface ResumeVersionSummary {
   id: string;
   timestamp: string;

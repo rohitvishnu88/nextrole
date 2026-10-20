@@ -2,18 +2,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import * as api from "@/lib/api";
-import type { Application } from "@/lib/types";
+import type { Application, TailorHistoryEntry } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useActiveProfile } from "@/lib/useActiveProfile";
-import { Wand2, Briefcase, ArrowRight, Trophy, Search } from "lucide-react";
+import { Wand2, Briefcase, ArrowRight, Trophy, Search, Download, FileText } from "lucide-react";
 
 export default function Dashboard() {
   const profile = useActiveProfile();
   const [apps, setApps] = useState<Application[]>([]);
+  const [tailorHistory, setTailorHistory] = useState<TailorHistoryEntry[]>([]);
 
   useEffect(() => {
     if (!profile) return;
     api.listApplications(profile).then(setApps).catch(() => {});
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile) return;
+    api.getTailorHistory(profile).then(setTailorHistory).catch(() => {});
   }, [profile]);
 
   const counts = {
@@ -121,6 +127,61 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl border border-warm-border p-12 text-center">
           <p className="text-muted text-sm">No applications yet.</p>
           <p className="text-muted text-xs mt-1">Tailor a resume or add an application to get started.</p>
+        </div>
+      )}
+
+      {tailorHistory.length > 0 && (
+        <div className="bg-white rounded-2xl border border-warm-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-warm-border">
+            <h2 className="font-semibold text-navy">Tailored Resumes</h2>
+          </div>
+          <div className="divide-y divide-warm-border">
+            {tailorHistory.slice(0, 5).map(entry => (
+              <div key={entry.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-cream transition-colors gap-4">
+                <div className="min-w-0">
+                  {entry.job_url ? (
+                    <a
+                      href={entry.job_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-navy hover:underline truncate block"
+                    >
+                      {entry.job_url}
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium text-navy">Tailored resume</p>
+                  )}
+                  <p className="text-xs text-muted mt-0.5">
+                    {new Date(entry.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {entry.pdf_available && (
+                    <a
+                      href={`/api/tailor/history/${profile}/${entry.id}/pdf`}
+                      download
+                      title="Download PDF"
+                      className="flex items-center gap-1 text-xs text-navy border border-warm-border rounded-lg px-2.5 py-1.5 hover:bg-cream transition-colors"
+                    >
+                      <Download size={13} />
+                      PDF
+                    </a>
+                  )}
+                  {entry.cover_letter_available && (
+                    <a
+                      href={`/api/tailor/history/${profile}/${entry.id}/cover-letter`}
+                      download
+                      title="Download Cover Letter"
+                      className="flex items-center gap-1 text-xs text-navy border border-warm-border rounded-lg px-2.5 py-1.5 hover:bg-cream transition-colors"
+                    >
+                      <FileText size={13} />
+                      Cover Letter
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

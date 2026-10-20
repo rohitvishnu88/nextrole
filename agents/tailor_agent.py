@@ -297,11 +297,18 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     json_out = resumes_dir / f"resume_data_{url_slug}.json"
     html_out = resumes_dir / f"resume_{url_slug}.html"
     pdf_out = resumes_dir / f"resume_{url_slug}.pdf"
+    meta_out = resumes_dir / f"meta_{url_slug}.json"
     cover_letter_txt = cover_letters_dir / f"cover_letter_{url_slug}.txt"
 
     with open(json_out, "w", encoding="utf-8") as f:
         json.dump(tailored, f, indent=2)
     print(f"  ✅ Tailored JSON: {json_out.name}")
+
+    # Sidecar metadata so past runs can be listed later - the job_url isn't
+    # part of the tailored resume itself, and the in-memory job dict in
+    # tailor_api.py doesn't survive a server restart.
+    with open(meta_out, "w", encoding="utf-8") as f:
+        json.dump({"job_url": job_url, "created_at": datetime.now().astimezone().isoformat()}, f, indent=2)
 
     _resume_builder.render_resume(tailored, str(html_out), str(pdf_out))
 

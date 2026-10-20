@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest } from "./types";
+import type { Application, ApplicationStatus, Profile, TailorJob, TailoredResume, SearchBrief, Signal, JobMatch, JobSearchResult, ResumeVersionSummary, ResumeVersion, SectionDraftRequest, SectionDraftResponse, SectionApplyRequest, TailorHistoryEntry } from "./types";
 
 const BASE = "/api";
 
@@ -117,6 +117,9 @@ export const patchTailorData = (
     method: "PATCH",
     body: JSON.stringify({ resume, cover_letter: coverLetter }),
   });
+
+export const getTailorHistory = (profileSlug: string) =>
+  req<TailorHistoryEntry[]>(`/tailor/history/${profileSlug}`);
 
 // Search Brief
 export const getSearchBrief = (slug: string) =>
