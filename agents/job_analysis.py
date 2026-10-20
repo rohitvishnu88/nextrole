@@ -79,9 +79,12 @@ def _normalise_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
-def make_analysis_id(jd_text: str, resume: dict) -> str:
+def make_analysis_id(jd_text: str, resume: dict, source_url: Optional[str] = None) -> str:
+    # A URL identifies the ad better than its text: re-fetching the same page can return
+    # slightly different text, which would otherwise re-analyse (and re-score) the same job.
     resume_hash = hashlib.sha256(json.dumps(resume, sort_keys=True).encode()).hexdigest()
-    return hashlib.sha256((_normalise_text(jd_text) + "\n" + resume_hash).encode()).hexdigest()[:16]
+    job_key = source_url.strip() if source_url else _normalise_text(jd_text)
+    return hashlib.sha256((job_key + "\n" + resume_hash).encode()).hexdigest()[:16]
 
 
 def _str(value) -> str:
@@ -123,7 +126,7 @@ def normalise_analysis(raw: dict) -> dict:
     }
 
 
-def analyse_job(client, resume: dict, jd_text: str) -> dict:
+def analyse_job(client, resume: dict, jd_text: str, source_url: Optional[str] = None) -> dict:
     if len(_normalise_text(jd_text)) < MIN_JD_CHARS:
         raise JobTextTooShort("Couldn't read the full job ad. Paste the job description text instead.")
 
@@ -150,7 +153,7 @@ Here is my resume:
     raw = json.loads(extract_json_object(response.content[0].text))
     analysis = normalise_analysis(raw if isinstance(raw, dict) else {})
     analysis["match_score"] = compute_match_score(analysis["requirements"])
-    analysis["analysis_id"] = make_analysis_id(jd_text, resume)
+    analysis["analysis_id"] = make_analysis_id(jd_text, resume, source_url)
     analysis["created_at"] = datetime.now().astimezone().isoformat()
     return analysis
 
@@ -177,10 +180,11 @@ def save_analysis(profile_slug: str, analysis: dict) -> None:
     path.write_text(json.dumps(analysis, indent=2), encoding="utf-8")
 
 
-def get_or_create_analysis(client, profile_slug: str, resume: dict, jd_text: str) -> dict:
-    cached = load_analysis(profile_slug, make_analysis_id(jd_text, resume))
+def get_or_create_analysis(client, profile_slug: str, resume: dict, jd_text: str,
+                           source_url: Optional[str] = None) -> dict:
+    cached = load_analysis(profile_slug, make_analysis_id(jd_text, resume, source_url))
     if cached is not None:
         return cached
-    analysis = analyse_job(client, resume, jd_text)
+    analysis = analyse_job(client, resume, jd_text, source_url)
     save_analysis(profile_slug, analysis)
     return analysis

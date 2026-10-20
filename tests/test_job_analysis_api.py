@@ -35,7 +35,7 @@ def setup(tmp_path, monkeypatch):
 
     calls = []
 
-    def fake_analysis(client, slug, resume, jd_text):
+    def fake_analysis(client, slug, resume, jd_text, source_url=None):
         calls.append(jd_text)
         if len(jd_text) < job_analysis.MIN_JD_CHARS:
             raise job_analysis.JobTextTooShort("Couldn't read the full job ad. Paste the job description text instead.")

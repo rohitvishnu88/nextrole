@@ -360,8 +360,8 @@ def run(job_url: str = "", jd_file: str = "", jd_text: str = "", profile_slug: s
     # Step 1: Analyse the job (cached). A job ad too short to analyse still gets tailored.
     print("  Analysing job...")
     try:
-        analysis = job_analysis.get_or_create_analysis(client, profile_slug, resume, jd_text) if profile_slug \
-            else job_analysis.analyse_job(client, resume, jd_text)
+        analysis = job_analysis.get_or_create_analysis(client, profile_slug, resume, jd_text, job_url or None) \
+            if profile_slug else job_analysis.analyse_job(client, resume, jd_text, job_url or None)
     except job_analysis.JobTextTooShort:
         analysis = None
 

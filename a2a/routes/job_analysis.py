@@ -51,7 +51,7 @@ def _run_analysis(slug: str, job_id: str, url: str) -> None:
     _last_error.pop(key, None)
     try:
         resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
-        analysis = job_analysis.get_or_create_analysis(_make_client(), slug, resume, _fetch_job_text(url))
+        analysis = job_analysis.get_or_create_analysis(_make_client(), slug, resume, _fetch_job_text(url), source_url=url)
         store = job_store.load_store(slug)
         job_store.set_analysis(store, job_id, analysis["analysis_id"])
         job_store.save_store(slug, store)

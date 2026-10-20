@@ -85,3 +85,13 @@ def test_analysis_path_rejects_bad_id():
         job_analysis.analysis_path("rohit", "../../x")
     with pytest.raises(ValueError):
         job_analysis.analysis_path("../x", "0123456789abcdef")
+
+
+def test_same_url_reuses_analysis_even_if_fetched_text_differs(tmp_path, monkeypatch):
+    monkeypatch.setattr(job_analysis, "ROOT", tmp_path)
+    client = FakeClient(json.dumps(ANALYSIS), json.dumps(ANALYSIS))
+    url = "https://jobs.lever.co/acme/1"
+    first = job_analysis.get_or_create_analysis(client, "rohit", RESUME, JD, source_url=url)
+    second = job_analysis.get_or_create_analysis(client, "rohit", RESUME, JD + " Apply now.", source_url=url)
+    assert len(client.calls) == 1
+    assert first["analysis_id"] == second["analysis_id"]
