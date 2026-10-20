@@ -10,6 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from a2a.auth import User, current_user
 from a2a.ownership import require_profile
+from a2a import metering
 
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -62,8 +63,17 @@ async def start_tailor(body: TailorRequest, user: User = Depends(current_user)):
     if not body.url and not body.jd_text:
         raise HTTPException(status_code=400, detail="Provide either 'url' or 'jd_text'")
 
+    reservation_id = metering.start(user, "tailor")
     job_id = str(uuid.uuid4())
     _jobs[job_id] = {"status": "running", "message": "Starting...", "profile_slug": body.profile_slug, "user_id": user.id}
+
+    def _tailor() -> dict:
+        import tailor_agent
+        result = tailor_agent.run(job_url=body.url or "", jd_text=body.jd_text or "", profile_slug=body.profile_slug)
+        if result["status"] != "completed":
+            # A run that couldn't finish shouldn't use up the allowance.
+            raise RuntimeError(result.get("reason", "Unknown error"))
+        return result
 
     async def _run():
         import sys
@@ -72,14 +82,7 @@ async def start_tailor(body: TailorRequest, user: User = Depends(current_user)):
         loop = asyncio.get_event_loop()
         _jobs[job_id]["message"] = "Fetching job description..."
         try:
-            result = await loop.run_in_executor(
-                None,
-                lambda: tailor_agent.run(
-                    job_url=body.url or "",
-                    jd_text=body.jd_text or "",
-                    profile_slug=body.profile_slug,
-                ),
-            )
+            result = await loop.run_in_executor(None, lambda: metering.run(reservation_id, _tailor))
             if result["status"] == "completed":
                 _jobs[job_id].update({
                     "status": "completed",

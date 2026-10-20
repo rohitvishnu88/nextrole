@@ -2,12 +2,14 @@ import json
 import os
 import sys
 import threading
+from typing import Optional
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from a2a.auth import User, current_user
 from core.ai_clients import make_anthropic
 from a2a.ownership import require_profile
+from a2a import metering
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
@@ -49,16 +51,25 @@ def _find_job(slug: str, job_id: str) -> dict:
     return job
 
 
-def _run_analysis(slug: str, job_id: str, url: str) -> None:
+def _analyse(slug: str, url: str) -> dict:
+    resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
+    jd_text, source = _fetch_job_text_with_source(url)
+    if source == "search":
+        raise job_analysis.JobTextTooShort(
+            "Only a search snippet was found for this job, not the full ad. Tailor it with the ad text pasted instead.")
+    return job_analysis.get_or_create_analysis(_make_client(), slug, resume, jd_text, source_url=url)
+
+
+def _cached_analysis(slug: str, url: str) -> Optional[dict]:
+    resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
+    return job_analysis.load_analysis(slug, job_analysis.make_analysis_id("", resume, url))
+
+
+def _run_analysis(slug: str, job_id: str, url: str, reservation_id: Optional[str] = None) -> None:
     key = (slug, job_id)
     _last_error.pop(key, None)
     try:
-        resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
-        jd_text, source = _fetch_job_text_with_source(url)
-        if source == "search":
-            raise job_analysis.JobTextTooShort(
-                "Only a search snippet was found for this job, not the full ad. Tailor it with the ad text pasted instead.")
-        analysis = job_analysis.get_or_create_analysis(_make_client(), slug, resume, jd_text, source_url=url)
+        analysis = metering.run(reservation_id, _analyse, slug, url)
         store = job_store.load_store(slug)
         job_store.set_analysis(store, job_id, analysis["analysis_id"])
         job_store.save_store(slug, store)
@@ -77,7 +88,15 @@ def start_job_analysis(slug: str, job_id: str, background_tasks: BackgroundTasks
         if (slug, job_id) in _running:
             return {"status": "analysing"}
         _running.add((slug, job_id))
-    background_tasks.add_task(_run_analysis, slug, job_id, job["url"])
+    # A saved analysis for this job costs nothing to reopen, so it doesn't use the allowance.
+    reservation_id = None
+    if _cached_analysis(slug, job["url"]) is None:
+        try:
+            reservation_id = metering.start(user, "analyse")
+        except HTTPException:
+            _running.discard((slug, job_id))
+            raise
+    background_tasks.add_task(_run_analysis, slug, job_id, job["url"], reservation_id)
     return {"status": "analysing"}
 
 

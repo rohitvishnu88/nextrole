@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from a2a.auth import User, current_user
 from core.ai_clients import make_anthropic
+from a2a import metering
 from a2a.ownership import require_profile
 from pydantic import BaseModel
 
@@ -346,7 +347,11 @@ def draft_section(slug: str, section: str, body: SectionDraft, user: User = Depe
         raise HTTPException(status_code=404, detail="No resume data for this profile")
 
     prompt = DRAFT_PROMPT_BUILDERS[kind](resume, section, body)
+    reservation_id = metering.start(user, "section_draft")
+    return metering.run(reservation_id, _draft, prompt, body, MODEL, extract_json_object)
 
+
+def _draft(prompt: str, body: "SectionDraft", MODEL: str, extract_json_object) -> dict:
     client = make_anthropic()
     response = client.messages.create(
         model=MODEL,

@@ -2,11 +2,13 @@ import json
 import os
 import sys
 import threading
+from typing import Optional
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from a2a.auth import User, current_user
 from a2a.ownership import require_profile
+from a2a import metering
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "agents"))
@@ -37,11 +39,15 @@ def _resume_file(slug: str) -> Path:
     return _profiles_dir() / slug / "resume_data.json"
 
 
-def _run_search(slug: str, send_email: bool = False) -> None:
+def _search(slug: str, send_email: bool) -> None:
+    resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
+    job_search_agent.run(resume, profile_slug=slug, send_email=send_email)
+
+
+def _run_search(slug: str, send_email: bool = False, reservation_id: Optional[str] = None) -> None:
     _last_error.pop(slug, None)
     try:
-        resume = json.loads(_resume_file(slug).read_text(encoding="utf-8"))
-        job_search_agent.run(resume, profile_slug=slug, send_email=send_email)
+        metering.run(reservation_id, _search, slug, send_email)
     except Exception as e:
         _last_error[slug] = str(e)
     finally:
@@ -58,8 +64,13 @@ def start_job_search(slug: str, background_tasks: BackgroundTasks, user: User = 
         if slug in _running:
             raise HTTPException(status_code=409, detail="A search is already running for this profile")
         _running.add(slug)
+    try:
+        reservation_id = metering.start(user, "job_search")
+    except HTTPException:
+        _running.discard(slug)
+        raise
     # The results email goes to the owner's inbox, so only the owner's own searches send it.
-    background_tasks.add_task(_run_search, slug, user.is_owner)
+    background_tasks.add_task(_run_search, slug, user.is_owner, reservation_id)
     return {"status": "searching"}
 
 

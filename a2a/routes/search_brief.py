@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from a2a.auth import User, current_user
 from core.ai_clients import make_anthropic
 from core.config import HAIKU_MODEL
+from a2a import metering
 from a2a.ownership import require_profile
 from pydantic import BaseModel
 
@@ -50,8 +51,15 @@ def get_search_brief(slug: str, user: User = Depends(current_user)):
     return _load_brief(slug)
 
 
-def _run_generation(slug: str) -> None:
+def _run_generation(slug: str, reservation_id: Optional[str] = None) -> None:
     """Background task — calls Claude and writes the brief file when done."""
+    try:
+        metering.run(reservation_id, _generate, slug)
+    except Exception as e:
+        print(f"  ⚠️  Search brief generation failed: {e}")
+
+
+def _generate(slug: str) -> None:
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent.parent / "core"))
     from config import extract_json_object
@@ -126,7 +134,8 @@ def generate_search_brief(slug: str, background_tasks: BackgroundTasks, user: Us
     if brief_f.exists():
         brief_f.unlink()
 
-    background_tasks.add_task(_run_generation, slug)
+    reservation_id = metering.start(user, "search_brief")
+    background_tasks.add_task(_run_generation, slug, reservation_id)
     return {"status": "generating"}
 
     _save_brief(slug, brief)

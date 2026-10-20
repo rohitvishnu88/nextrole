@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from a2a.auth import User, current_user
 from core.ai_clients import make_anthropic
+from a2a import metering
 from a2a.ownership import MAX_PROFILES_PER_USER, require_profile, unique_slug, visible_profiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -230,14 +231,17 @@ summarise, condense, or drop entries to save space.
 RESUME TEXT:
 {text[:20000]}"""
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=8096,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    def _parse() -> dict:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=8096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        result = json.loads(extract_json_object(response.content[0].text))
+        result["skills"] = _normalize_skills(result.get("skills"))
+        return result
 
-    parsed = json.loads(extract_json_object(response.content[0].text))
-    parsed["skills"] = _normalize_skills(parsed.get("skills"))
+    parsed = metering.run(metering.start(user, "resume_parse"), _parse)
     _PARSE_CACHE[slug] = parsed
     return parsed
 
