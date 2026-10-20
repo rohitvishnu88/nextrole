@@ -126,6 +126,14 @@ def mark_status(store: dict, job_id: str, status: str) -> bool:
     return True
 
 
+def set_analysis(store: dict, job_id: str, analysis_id: str) -> bool:
+    job = store.get("jobs", {}).get(job_id)
+    if job is None:
+        return False
+    job["analysis_id"] = analysis_id
+    return True
+
+
 def mark_new_as_seen(store: dict) -> bool:
     changed = False
     for job in store.get("jobs", {}).values():

@@ -40,7 +40,7 @@ from .models import (
     make_error,
 )
 from .skills import tailor, job_search, linkedin
-from .routes import profiles, applications, tailor_api, search_brief, job_search as job_search_routes, resume_versions
+from .routes import profiles, applications, tailor_api, search_brief, job_search as job_search_routes, resume_versions, job_analysis as job_analysis_routes
 
 app = FastAPI(
     title="Resume Builder A2A Agent",
@@ -64,6 +64,7 @@ app.include_router(tailor_api.router)
 app.include_router(search_brief.router)
 app.include_router(job_search_routes.router)
 app.include_router(resume_versions.router)
+app.include_router(job_analysis_routes.router)
 
 
 # ---------------------------------------------------------------------------
