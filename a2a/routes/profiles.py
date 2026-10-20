@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from a2a import resume_history
@@ -122,6 +123,27 @@ def get_resume(slug: str):
     if not resume_file.exists():
         raise HTTPException(status_code=404, detail="No resume data for this profile")
     return json.loads(resume_file.read_text(encoding="utf-8"))
+
+
+@router.get("/{slug}/resume/pdf")
+def download_resume_pdf(slug: str):
+    _require_valid_slug(slug)
+    resume = resume_history.load_current(slug)
+    if resume is None:
+        raise HTTPException(status_code=404, detail="No resume data for this profile")
+
+    import sys
+    from pathlib import Path as _Path
+    sys.path.insert(0, str(_Path(__file__).parent.parent.parent / "core"))
+    from resume_builder import render_resume
+
+    output_dir = _Path(__file__).parent.parent.parent / "output" / "profiles" / slug
+    output_dir.mkdir(parents=True, exist_ok=True)
+    html_path = output_dir / "resume.html"
+    pdf_path = output_dir / "resume.pdf"
+    render_resume(resume, str(html_path), str(pdf_path))
+
+    return FileResponse(pdf_path, media_type="application/pdf", filename=f"{slug}-resume.pdf")
 
 
 @router.post("/{slug}/resume/parse")

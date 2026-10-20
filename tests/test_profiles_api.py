@@ -76,6 +76,41 @@ def test_delete_profile(client):
     assert client.get("/api/profiles").json() == []
 
 
+def test_download_resume_pdf(client, profiles_dir, monkeypatch):
+    import shutil
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent / "core"))
+    import resume_builder
+
+    slug = "pdf-download-test-fixture"
+    (profiles_dir / slug).mkdir(parents=True)
+    (profiles_dir / slug / "resume_data.json").write_text(json.dumps({"name": "Test User"}))
+
+    monkeypatch.setattr(
+        resume_builder, "render_resume",
+        lambda data, html, pdf: Path(pdf).write_bytes(b"%PDF-1.4"),
+    )
+
+    output_dir = Path(__file__).parent.parent / "output" / "profiles" / slug
+    try:
+        resp = client.get(f"/api/profiles/{slug}/resume/pdf")
+        assert resp.status_code == 200
+        assert resp.content == b"%PDF-1.4"
+        assert resp.headers["content-type"] == "application/pdf"
+    finally:
+        shutil.rmtree(output_dir, ignore_errors=True)
+
+
+def test_download_resume_pdf_404_when_no_resume(client):
+    resp = client.get("/api/profiles/nonexistent-profile/resume/pdf")
+    assert resp.status_code == 404
+
+
+def test_download_resume_pdf_rejects_path_traversal_slug(client):
+    resp = client.get("/api/profiles/%2E%2E/resume/pdf")
+    assert resp.status_code == 400
+
+
 def test_confirm_resume_pushes_history_before_overwriting(client, profiles_dir):
     import io
     from unittest.mock import patch

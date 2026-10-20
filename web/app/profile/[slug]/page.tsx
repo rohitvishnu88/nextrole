@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import * as api from "@/lib/api";
-import { Code2, LayoutList, Copy, Check, Pencil } from "lucide-react";
+import { Code2, LayoutList, Copy, Check, Pencil, Download } from "lucide-react";
+import { setActiveProfile } from "@/lib/useActiveProfile";
 
 interface Experience {
   title: string;
@@ -49,6 +50,12 @@ export default function ProfilePage() {
 
   useEffect(() => { loadResume(); }, [loadResume]);
 
+  // Set synchronously on mount, before any network round-trip - ProfileSwitcher's
+  // own localStorage read races against this on navigation, and whichever finishes
+  // last wins. An effect keyed on `slug` alone (no fetch in between) always commits
+  // before a fetch initiated elsewhere can resolve, so this side wins the race.
+  useEffect(() => { if (slug) setActiveProfile(slug); }, [slug]);
+
   function handleCopy() {
     if (!raw) return;
     navigator.clipboard.writeText(JSON.stringify(raw, null, 2));
@@ -71,6 +78,14 @@ export default function ProfilePage() {
             <Pencil size={13} />
             Edit
           </Link>
+          <a
+            href={`/api/profiles/${slug}/resume/pdf`}
+            download
+            className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+          >
+            <Download size={13} />
+            Download PDF
+          </a>
           {view === "json" && (
             <button
               onClick={handleCopy}
