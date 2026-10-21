@@ -12,6 +12,7 @@ from a2a.auth import User, current_user
 from core.ai_clients import make_anthropic
 from a2a import metering
 from a2a.ownership import MAX_PROFILES_PER_USER, require_profile, unique_slug, visible_profiles
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -247,7 +248,9 @@ RESUME TEXT:
         result["skills"] = _normalize_skills(result.get("skills"))
         return result
 
-    parsed = metering.run(metering.start(user, "resume_parse"), _parse)
+    # The Claude call takes 30-60s; run it off the event loop so other users aren't frozen.
+    reservation_id = metering.start(user, "resume_parse")
+    parsed = await run_in_threadpool(metering.run, reservation_id, _parse)
     _PARSE_CACHE[slug] = parsed
     return parsed
 
